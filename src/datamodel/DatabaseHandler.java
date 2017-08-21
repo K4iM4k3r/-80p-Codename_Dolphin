@@ -9,7 +9,6 @@ import java.sql.*;
  */
 public class DatabaseHandler {
 
-    private final String driver = "org.sqlite.JDBC";
     private final String url = "jdbc:sqlite:."+ File.separator+"database"+File.separator+"database.sqlite";
     private Connection connection;
 
@@ -21,14 +20,16 @@ public class DatabaseHandler {
         if (this.connection != null) {
             try {
                 this.connection.close();
-            } catch (Exception e) {
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
     }
 
-    public void connect() {
+    void connect() {
         try {
-            Class.forName(this.driver);
+            String driver = "org.sqlite.JDBC";
+            Class.forName(driver);
             this.connection = DriverManager.getConnection(this.url);
         } catch (Exception e) {
             e.printStackTrace();
