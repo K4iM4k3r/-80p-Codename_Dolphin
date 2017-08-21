@@ -1,10 +1,7 @@
 package datamodel;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * Created by Kai on 18.08.2017.
@@ -51,6 +48,21 @@ public class DatabaseHandler {
             return false; 
         }
         return true;
+    }
+
+    public ResultSet selectAllPlan(){
+
+        try {
+            String query = "SELECT * FROM  Plan";
+            Statement stmt =  stmt = connection.createStatement();
+            ResultSet rs =  stmt.executeQuery(query);
+
+            return rs;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 }
