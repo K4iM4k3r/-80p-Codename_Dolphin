@@ -18,6 +18,8 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main extends Application {
     private String projectname = "Project - Dolphin";
@@ -34,6 +36,7 @@ public class Main extends Application {
     private Button exit;
     private Button createPlan;
     private Label labelDistance;
+    private VBox list;
     private int actID = -1;
 
 
@@ -59,9 +62,10 @@ public class Main extends Application {
          */
         BorderPane borderPane = new BorderPane();
         ScrollPane scrollPane = new ScrollPane();
-        VBox list = new VBox();
         VBox footer = new VBox();
         HBox actions = new HBox();
+        list = new VBox();
+
 
 
         scrollPane.setFitToWidth(true);
@@ -132,7 +136,7 @@ public class Main extends Application {
         });
 
 
-        list.getChildren().addAll(addEmptyLine(list));
+        list.getChildren().addAll(addEmptyLine());
         scrollPane.setContent(list);
         actions.getChildren().addAll(savePlan, exit);
         footer.getChildren().addAll(labelDistance, actions);
@@ -164,9 +168,28 @@ public class Main extends Application {
             DatabaseHandler db = new DatabaseHandler();
             Optional<Plan> planOptional = db.selectPlan(2);
 
-            if(planOptional.isPresent()){
+            if(planOptional.isPresent()) {
                 Plan plan = planOptional.get();
                 actID = plan.getId();
+                list.getChildren().clear();
+                labelDistance.setText("Distanz: " + plan.getDistance() + "m");
+                String[] lines = plan.getContent().split("\n");
+                Pattern p = Pattern.compile("(((\\d+)(\\s*[x*]){0,1}\\s*(\\d*))m)(.)*");
+                for (String s : lines) {
+                    Matcher m = p.matcher(s);
+                    if (m.matches()) {
+                        String distance = m.group(1);
+                        String unit = s.substring(distance.length());
+                        list.getChildren().add(addLine(distance, unit));
+                    }
+                    else {
+                        list.getChildren().add(addLine("", s));
+                    }
+
+                }
+
+                stage.setScene(planview);
+                
 
             }
         });
@@ -187,6 +210,7 @@ public class Main extends Application {
         grid.add(horsep,0 ,1);
         grid.add(errorlog,0,2);
         grid.add(createPlan, 1,0);
+        grid.add(open, 2,0);
 
         main = new Scene(grid);
 
@@ -209,7 +233,7 @@ public class Main extends Application {
         }
     }
 
-    private HBox addEmptyLine(VBox parent){
+    private HBox addEmptyLine(){
         HBox row = new HBox();
 
         TextField cell1 = new TextField();
@@ -226,7 +250,7 @@ public class Main extends Application {
             if(!newValue){
                 final int[] dis = {0};
 
-                parent.getChildren().stream().forEach(n -> {
+                list.getChildren().stream().forEach(n -> {
                     HBox hBox = (HBox) n;
                     TextField textField = (TextField) hBox.getChildren().get(0);
                     dis[0] += PlanUtils.calculateDistance(textField.getText());
@@ -238,13 +262,65 @@ public class Main extends Application {
         }));
 
         btnAdd.setOnAction((ActionEvent e) ->{
-            int index = parent.getChildren().indexOf(row);
-            parent.getChildren().add(index+1, addEmptyLine(parent));
+            int index = list.getChildren().indexOf(row);
+            list.getChildren().add(index+1, addEmptyLine());
 
         });
 
         btnRemove.setOnAction((ActionEvent e) -> {
-            ObservableList<Node> childs = parent.getChildren();
+            ObservableList<Node> childs = list.getChildren();
+            if(childs.size() == 1){
+                cell1.setText("");
+                cell2.setText("");
+            }
+            else {
+                childs.remove(row);
+            }
+        });
+
+        row.getChildren().addAll(cell1, cell2, btnAdd, btnRemove);
+
+        HBox.setHgrow(cell2, Priority.ALWAYS);
+        return row;
+    }
+    private HBox addLine(String distace, String unit){
+        HBox row = new HBox();
+
+        TextField cell1 = new TextField();
+        TextField cell2 = new TextField();
+        Button btnAdd = new Button();
+        Button btnRemove = new Button();
+
+        cell1.setMinWidth(100);
+        cell2.setMinWidth(300);
+        cell1.setText(distace);
+        cell2.setText(unit);
+        btnAdd.setText("new Line");
+        btnRemove.setText("remove");
+
+        cell1.focusedProperty().addListener(((observable, oldValue, newValue) -> {
+            if(!newValue){
+                final int[] dis = {0};
+
+                list.getChildren().stream().forEach(n -> {
+                    HBox hBox = (HBox) n;
+                    TextField textField = (TextField) hBox.getChildren().get(0);
+                    dis[0] += PlanUtils.calculateDistance(textField.getText());
+
+                });
+
+                labelDistance.setText("Distanz: " + dis[0] +"m");
+            }
+        }));
+
+        btnAdd.setOnAction((ActionEvent e) ->{
+            int index = list.getChildren().indexOf(row);
+            list.getChildren().add(index+1, addEmptyLine());
+
+        });
+
+        btnRemove.setOnAction((ActionEvent e) -> {
+            ObservableList<Node> childs = list.getChildren();
             if(childs.size() == 1){
                 cell1.setText("");
                 cell2.setText("");
