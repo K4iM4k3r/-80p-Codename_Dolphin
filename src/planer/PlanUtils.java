@@ -28,7 +28,7 @@ public class PlanUtils {
                 line = reader.readLine();
             }
             DatabaseHandler db = new DatabaseHandler();
-            return db.addPlan(distance, content);
+            return db.addPlan(distance, content) > 0;
 
         } catch (IOException e) {
             e.printStackTrace();
