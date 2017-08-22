@@ -21,6 +21,7 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
@@ -50,13 +51,52 @@ public class Main extends Application {
         stage.setWidth(450);
         stage.setHeight(500);
         stage.setTitle(projectname);
-//        stage.getIcons().add(new Image("file:icon.png"));
+        stage.getIcons().add(new Image("file:Logo - 64x64.png"));
 
         Label errorlog = new Label("Hello World");
 
         Separator horsep = new Separator(Orientation.HORIZONTAL);
         horsep.setVisible(true);
 
+        GridPane table = new GridPane();
+        table.setGridLinesVisible(true);
+//        table.setHgap(10);
+//        table.setVgap(10);
+        table.setPadding(new Insets(15,15,15,15));
+
+
+        Button btnAddRow = new Button("add Line");
+        btnAddRow.setOnAction((ActionEvent e)-> {
+
+        });
+
+        TextField cell1 = new TextField();
+        TextField cell2 = new TextField();
+        TextField cell3 = new TextField();
+        TextField cell4 = new TextField();
+        cell1.setManaged(true);
+        cell1.setMinWidth(100);
+        cell2.setManaged(true);
+        cell2.setMinWidth(300);
+        cell3.setManaged(true);
+        cell4.setManaged(true);
+
+
+
+        table.add(cell1,0,0);
+        table.add(cell2,1,0);
+        table.add(cell3,0,1);
+        table.add(cell4,1,1);
+
+        table.setStyle("-fx-background-color: #C0C0C0;");
+
+        Scene create = new Scene(table);
+
+
+        Button btnAddPlan = new Button("new Plan");
+        btnAddPlan.setOnAction((ActionEvent e) ->{
+            stage.setScene(create);
+        });
 
         Button btn = new Button("Click me!");
         btn.setOnAction((ActionEvent e)  ->  {
@@ -74,15 +114,18 @@ public class Main extends Application {
 
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(15,15,15,15));
-        grid.setGridLinesVisible(true);
+//        grid.setGridLinesVisible(true);
 //        grid.setAlignment(Pos.CENTER);
         grid.setHgap(10);
         grid.setVgap(10);
         grid.add(btn,0,0 );
         grid.add(horsep,0 ,1);
         grid.add(errorlog,0,2);
+        grid.add(btnAddPlan, 1,0);
         Scene scene = new Scene(grid, 500,500);
         stage.setScene(scene);
+        stage.setMinWidth(500);
+        stage.setMinHeight(450);
         stage.show();
 
 //
