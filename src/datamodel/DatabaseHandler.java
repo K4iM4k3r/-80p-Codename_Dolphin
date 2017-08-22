@@ -58,6 +58,26 @@ public class DatabaseHandler {
         return -1;
     }
 
+    public int updatePlan(int id, int distance , String content){
+        String query = "UPDATE plan SET distanz= ?, inhalt= ? WHERE id = ?; ";
+        try{
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, distance);
+            statement.setString(2, content);
+            statement.setInt(3, id);
+            int res = statement.executeUpdate();
+            
+            if(res == 0 ){
+                return -1;
+            }
+            return 1;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
     public ResultSet selectAllPlan(){
 
         try {
