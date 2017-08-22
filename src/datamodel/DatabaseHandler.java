@@ -36,19 +36,26 @@ public class DatabaseHandler {
         }
     }
 
-    public boolean addPlan(int dis, String content){
+    public int addPlan(int dis, String content){
         String query = "INSERT INTO Plan (Distanz, Inhalt)  VALUES (?, ?);";
         try{
             PreparedStatement stmt = connection.prepareStatement(query);
 
             stmt.setInt(1, dis);
             stmt.setString(2, content);
-            stmt.executeUpdate();
+            int res = stmt.executeUpdate();
+
+            if(res == 0 ){
+                return -1;
+            }
+            ResultSet generateID = stmt.getGeneratedKeys();
+            if (generateID.next()){
+                return generateID.getInt("id");
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false; 
         }
-        return true;
+        return -1;
     }
 
     public ResultSet selectAllPlan(){
