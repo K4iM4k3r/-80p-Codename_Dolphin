@@ -1,26 +1,42 @@
 package datamodel;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-
-import java.util.ArrayList;
-
 /**
  * Created by Kai on 17.08.2017.
  * part of 80p - Codename Dolphin
  */
 public class Plan {
-    private ArrayList<Uebung> lst = new ArrayList<>();
-    private ArrayList<String> tags = new ArrayList<>();
-    private int dist = 0;
+    private int id;
+    private int distance;
+    private String content;
 
-    public Plan(ArrayList<Uebung> lst, ArrayList<String> tags, int dist) {
-        this.lst = lst;
-        this.tags = tags;
-        this.dist = dist;
+    public Plan(int id, int distance, String content) {
+        this.id = id;
+        this.distance = distance;
+        this.content = content;
     }
 
-    public ObservableList<Uebung> getPlan(){
-        return FXCollections.observableArrayList(lst);
+    public int getId() {
+        return id;
     }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getDistance() {
+        return distance;
+    }
+
+    public void setDistance(int distance) {
+        this.distance = distance;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
 }
