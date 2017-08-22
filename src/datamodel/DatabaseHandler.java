@@ -2,6 +2,7 @@ package datamodel;
 
 import java.io.File;
 import java.sql.*;
+import java.util.Optional;
 
 /**
  * Created by Kai on 18.08.2017.
@@ -50,7 +51,7 @@ public class DatabaseHandler {
             }
             ResultSet generateID = stmt.getGeneratedKeys();
             if (generateID.next()){
-                return generateID.getInt("id");
+                return generateID.getInt(1);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -76,6 +77,24 @@ public class DatabaseHandler {
             e.printStackTrace();
         }
         return -1;
+    }
+
+
+    public Optional<Plan> selectPlan(int id){
+        try {
+            String query = "SELECT * FROM  plan WHERE id = ? ;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+            ResultSet rs = statement.executeQuery();
+
+            if(rs.next()){
+                return Optional.of(new Plan(rs.getInt(0), rs.getInt(2),rs.getString(1)));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
     }
 
     public ResultSet selectAllPlan(){
