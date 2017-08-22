@@ -88,7 +88,7 @@ public class DatabaseHandler {
             ResultSet rs = statement.executeQuery();
 
             if(rs.next()){
-                return Optional.of(new Plan(rs.getInt(0), rs.getInt(2),rs.getString(1)));
+                return Optional.of(new Plan(rs.getInt(1), rs.getInt(3),rs.getString(2)));
             }
 
         } catch (SQLException e) {

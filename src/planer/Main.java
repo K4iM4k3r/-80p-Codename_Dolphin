@@ -90,7 +90,7 @@ public class Main extends Application {
             final int[] dis = {0};
             StringBuffer content = new StringBuffer();
 
-            list.getChildren().stream().forEach(n -> {
+            list.getChildren().forEach(n -> {
                 HBox hBox = (HBox) n;
                 String unitDistance = ((TextField) hBox.getChildren().get(0)).getText();
                 String unitPractice = ((TextField) hBox.getChildren().get(1)).getText();
@@ -98,7 +98,7 @@ public class Main extends Application {
                 dis[0] += PlanUtils.calculateDistance(unitDistance);
 
                 if(!unitPractice.isEmpty()){
-                    content.append(unitDistance + " " + unitPractice + "\n");
+                    content.append(unitDistance).append(" ").append(unitPractice).append("\n");
                 }
 
 
@@ -118,13 +118,14 @@ public class Main extends Application {
 
                 Optional<ButtonType> result = dialogAlert.showAndWait();
 
+                if(result.isPresent()){
+                    if (result.get() == buttonNew){
+                        actID = db.addPlan(dis[0], content.toString());
+                    }
+                    else if (result.get() == buttonOverride){
+                        db.updatePlan(actID, dis[0], content.toString());
 
-                if (result.get() == buttonNew){
-                    actID = db.addPlan(dis[0], content.toString());
-                }
-                else if (result.get() == buttonOverride){
-                    db.updatePlan(actID, dis[0], content.toString());
-
+                    }
                 }
             }
             else{
@@ -174,7 +175,7 @@ public class Main extends Application {
                 list.getChildren().clear();
                 labelDistance.setText("Distanz: " + plan.getDistance() + "m");
                 String[] lines = plan.getContent().split("\n");
-                Pattern p = Pattern.compile("(((\\d+)(\\s*[x*]){0,1}\\s*(\\d*))m)(.)*");
+                Pattern p = Pattern.compile("(((\\d+)(\\s*[x*])?\\s*(\\d*))m)(.)*");
                 for (String s : lines) {
                     Matcher m = p.matcher(s);
                     if (m.matches()) {
@@ -234,55 +235,9 @@ public class Main extends Application {
     }
 
     private HBox addEmptyLine(){
-        HBox row = new HBox();
-
-        TextField cell1 = new TextField();
-        TextField cell2 = new TextField();
-        Button btnAdd = new Button();
-        Button btnRemove = new Button();
-
-        cell1.setMinWidth(100);
-        cell2.setMinWidth(300);
-        btnAdd.setText("new Line");
-        btnRemove.setText("remove");
-
-        cell1.focusedProperty().addListener(((observable, oldValue, newValue) -> {
-            if(!newValue){
-                final int[] dis = {0};
-
-                list.getChildren().stream().forEach(n -> {
-                    HBox hBox = (HBox) n;
-                    TextField textField = (TextField) hBox.getChildren().get(0);
-                    dis[0] += PlanUtils.calculateDistance(textField.getText());
-
-                });
-
-                labelDistance.setText("Distanz: " + dis[0] +"m");
-            }
-        }));
-
-        btnAdd.setOnAction((ActionEvent e) ->{
-            int index = list.getChildren().indexOf(row);
-            list.getChildren().add(index+1, addEmptyLine());
-
-        });
-
-        btnRemove.setOnAction((ActionEvent e) -> {
-            ObservableList<Node> childs = list.getChildren();
-            if(childs.size() == 1){
-                cell1.setText("");
-                cell2.setText("");
-            }
-            else {
-                childs.remove(row);
-            }
-        });
-
-        row.getChildren().addAll(cell1, cell2, btnAdd, btnRemove);
-
-        HBox.setHgrow(cell2, Priority.ALWAYS);
-        return row;
+        return addLine("", "");
     }
+
     private HBox addLine(String distace, String unit){
         HBox row = new HBox();
 
@@ -302,7 +257,7 @@ public class Main extends Application {
             if(!newValue){
                 final int[] dis = {0};
 
-                list.getChildren().stream().forEach(n -> {
+                list.getChildren().forEach(n -> {
                     HBox hBox = (HBox) n;
                     TextField textField = (TextField) hBox.getChildren().get(0);
                     dis[0] += PlanUtils.calculateDistance(textField.getText());
