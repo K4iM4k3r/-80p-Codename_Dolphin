@@ -2,100 +2,173 @@ package planer;
 
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
-import datamodel.Uebung;
 import javafx.application.Application;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
-import javafx.scene.Parent;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.Optional;
 
 public class Main extends Application {
     private String projectname = "Project - Dolphin";
-    private TableView<Uebung> table = new TableView<>();
-    private final ObservableList<Uebung> data =
-            FXCollections.observableArrayList(
-                    new Uebung("100m", "Einschwimmen"),
-                    new Uebung("4x 50m", "Johnson")
-
-            );
+//    private TableView<Uebung> table = new TableView<>();
+//    private final ObservableList<Uebung> data =
+//            FXCollections.observableArrayList(
+//                    new Uebung("100m", "Einschwimmen"),
+//                    new Uebung("4x 50m", "Johnson")
+//
+//            );
+    private Stage actualStage;
+    private Scene main;
+    private Scene planview;
+    private Button exit;
+    private Button createPlan;
+    private Label labelDistance;
+    private int actID = -1;
 
 
     @Override
     public void start(Stage stage) throws Exception {
-//        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-//        primaryStage.setTitle("Hello World");
-//        primaryStage.setScene(new Scene(root, 300, 275));
-//        primaryStage.show();
 
-//        Scene scene = new Scene(new Group());
-        stage.setWidth(450);
-        stage.setHeight(500);
+        actualStage = stage;
         stage.setTitle(projectname);
         stage.getIcons().add(new Image("file:Logo - 64x64.png"));
+        stage.setMinWidth(600);
+        stage.setMinHeight(500);
+        stage.setWidth(600);
+        stage.setHeight(500);
 
         Label errorlog = new Label("Hello World");
 
         Separator horsep = new Separator(Orientation.HORIZONTAL);
         horsep.setVisible(true);
 
-        GridPane table = new GridPane();
-        table.setGridLinesVisible(true);
-//        table.setHgap(10);
-//        table.setVgap(10);
-        table.setPadding(new Insets(15,15,15,15));
+
+        /* Layout des Planeditors
+         *
+         */
+        BorderPane borderPane = new BorderPane();
+        ScrollPane scrollPane = new ScrollPane();
+        VBox list = new VBox();
+        VBox footer = new VBox();
+        HBox actions = new HBox();
 
 
-        Button btnAddRow = new Button("add Line");
-        btnAddRow.setOnAction((ActionEvent e)-> {
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        actions.setAlignment(Pos.CENTER);
+        actions.setSpacing(10);
+        actions.setPadding(new Insets(10,10,10,10));
 
+        Label label = new Label("Ihr Trainingsplan");
+        labelDistance = new Label("Distanz: ");
+        Button savePlan = new Button("save");
+        exit = new Button("exit");
+        exit.setOnAction(this::switchScene);
+
+
+
+
+
+        savePlan.setOnAction((ActionEvent e) -> {
+
+            DatabaseHandler db = new DatabaseHandler();
+            final int[] dis = {0};
+            StringBuffer content = new StringBuffer();
+
+            list.getChildren().stream().forEach(n -> {
+                HBox hBox = (HBox) n;
+                String unitDistance = ((TextField) hBox.getChildren().get(0)).getText();
+                String unitPractice = ((TextField) hBox.getChildren().get(1)).getText();
+
+                dis[0] += PlanUtils.calculateDistance(unitDistance);
+
+                if(!unitPractice.isEmpty()){
+                    content.append(unitDistance + " " + unitPractice + "\n");
+                }
+
+
+            });
+
+            if(actID != -1){
+                Alert dialogAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                dialogAlert.setTitle("Überschreiben?");
+                dialogAlert.setHeaderText("Alten Plan überschreiben?");
+                dialogAlert.setContentText("Oder als einen neuen Plan anlegen");
+
+                ButtonType buttonNew = new ButtonType("Neuen");
+                ButtonType buttonOverride = new ButtonType("Überschreiben");
+                ButtonType buttonCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                dialogAlert.getButtonTypes().setAll(buttonNew, buttonOverride, buttonCancel);
+
+                Optional<ButtonType> result = dialogAlert.showAndWait();
+
+
+                if (result.get() == buttonNew){
+                    actID = db.addPlan(dis[0], content.toString());
+                }
+                else if (result.get() == buttonOverride){
+                    db.updatePlan(actID, dis[0], content.toString());
+
+                }
+            }
+            else{
+                actID = db.addPlan(dis[0], content.toString());
+            }
+
+
+            //TODO Toast ode ähnliches
         });
 
-        TextField cell1 = new TextField();
-        TextField cell2 = new TextField();
-        TextField cell3 = new TextField();
-        TextField cell4 = new TextField();
-        cell1.setManaged(true);
-        cell1.setMinWidth(100);
-        cell2.setManaged(true);
-        cell2.setMinWidth(300);
-        cell3.setManaged(true);
-        cell4.setManaged(true);
+
+        list.getChildren().addAll(addEmptyLine(list));
+        scrollPane.setContent(list);
+        actions.getChildren().addAll(savePlan, exit);
+        footer.getChildren().addAll(labelDistance, actions);
+        borderPane.setTop(label);
+        borderPane.setCenter(scrollPane);
+        borderPane.setBottom(footer);
+
+        planview = new Scene(borderPane);
 
 
 
-        table.add(cell1,0,0);
-        table.add(cell2,1,0);
-        table.add(cell3,0,1);
-        table.add(cell4,1,1);
-
-        table.setStyle("-fx-background-color: #C0C0C0;");
-
-        Scene create = new Scene(table);
 
 
-        Button btnAddPlan = new Button("new Plan");
-        btnAddPlan.setOnAction((ActionEvent e) ->{
-            stage.setScene(create);
+        /* Layout des Main-Fensters
+         *
+         */
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(15,15,15,15));
+//        grid.setGridLinesVisible(true);
+//        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        Button open = new Button("open Plan");
+        createPlan = new Button("new Plan");
+        createPlan.setOnAction(this::switchScene);
+
+        open.setOnAction((ActionEvent e) -> {
+            DatabaseHandler db = new DatabaseHandler();
+            Optional<Plan> planOptional = db.selectPlan(2);
+
+            if(planOptional.isPresent()){
+                Plan plan = planOptional.get();
+                actID = plan.getId();
+
+            }
         });
 
         Button btn = new Button("Click me!");
@@ -103,94 +176,88 @@ public class Main extends Application {
             FileChooser fileChooser = new FileChooser();
             File file = fileChooser.showOpenDialog(stage);
             if(file != null && file.isFile() && file.canRead()){
-                errorlog.setText(file.getName() + (PlanUtils.readFromFile(file.toPath()) ? " erfolgreich geladen!" : " konnte nicht geladen werden!"));
-                System.out.println(file.getAbsolutePath());
+                String res = (PlanUtils.readFromFile(file.toPath()) ? " erfolgreich geladen!" : " konnte nicht geladen werden!");
+                errorlog.setText(file.getName() + res );
+                System.out.println(file.getAbsolutePath() + res );
 
             }
         });
 
-
-
-
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(15,15,15,15));
-//        grid.setGridLinesVisible(true);
-//        grid.setAlignment(Pos.CENTER);
-        grid.setHgap(10);
-        grid.setVgap(10);
         grid.add(btn,0,0 );
         grid.add(horsep,0 ,1);
         grid.add(errorlog,0,2);
-        grid.add(btnAddPlan, 1,0);
-        Scene scene = new Scene(grid, 500,500);
-        stage.setScene(scene);
-        stage.setMinWidth(500);
-        stage.setMinHeight(450);
+        grid.add(createPlan, 1,0);
+
+        main = new Scene(grid);
+
+        stage.setScene(main);
         stage.show();
-
-//
-//        final Label label = new Label("Trainingsplan");
-//        label.setFont(new Font("Arial", 20));
-//
-//        table.setEditable(true);
-//
-//
-//        TableColumn dist = new TableColumn("Distanz");
-//        dist.setMinWidth(100);
-//        dist.setCellFactory(TextFieldTableCell.forTableColumn());
-//        dist.setOnEditCommit(
-//                new EventHandler<TableColumn.CellEditEvent<Uebung, String>>() {
-//                    @Override
-//                    public void handle(TableColumn.CellEditEvent<Uebung, String> t) {
-//                        ((Uebung) t.getTableView().getItems().get(
-//                                t.getTablePosition().getRow())
-//                        ).setDistanz(t.getNewValue());
-//                    }
-//                }
-//        );
-//        dist.setCellValueFactory(
-//                new PropertyValueFactory<Uebung, String>("distanz"));
-//
-//        TableColumn ueb = new TableColumn("Uebung");
-//        ueb.setMinWidth(200);
-//        ueb.setSortable(false);
-//        ueb.setCellValueFactory(
-//                new PropertyValueFactory<Uebung, String>("uebung"));
-//        ueb.setCellFactory(TextFieldTableCell.forTableColumn());
-//        ueb.setOnEditCommit(
-//                new EventHandler<TableColumn.CellEditEvent<Uebung, String>>() {
-//                    @Override
-//                    public void handle(TableColumn.CellEditEvent<Uebung, String> t) {
-//                        ((Uebung) t.getTableView().getItems().get(
-//                                t.getTablePosition().getRow())
-//                        ).setUebung(t.getNewValue());
-//                    }
-//                }
-//        );
-//
-//
-//
-//        table.setItems(data);
-//        table.getColumns().addAll(dist, ueb);
-//
-//
-//        final VBox vbox = new VBox();
-//        vbox.setSpacing(5);
-//        vbox.setPadding(new Insets(10, 0, 0, 10));
-//        vbox.getChildren().addAll(label, table);
-//        vbox.setFillWidth(true);
-//
-//
-//        ((Group) scene.getRoot()).getChildren().addAll(vbox);
-//        stage.setScene(scene);
-//        stage.show();
-//        DatabaseHandler db = new DatabaseHandler();
-
-
     }
 
 
     public static void main(String[] args) {
         launch(args);
     }
+
+
+    private void switchScene(ActionEvent e){
+        if(e.getSource().equals(exit)){
+            actualStage.setScene(main);
+        }
+        else{
+            actualStage.setScene(planview);
+        }
+    }
+
+    private HBox addEmptyLine(VBox parent){
+        HBox row = new HBox();
+
+        TextField cell1 = new TextField();
+        TextField cell2 = new TextField();
+        Button btnAdd = new Button();
+        Button btnRemove = new Button();
+
+        cell1.setMinWidth(100);
+        cell2.setMinWidth(300);
+        btnAdd.setText("new Line");
+        btnRemove.setText("remove");
+
+        cell1.focusedProperty().addListener(((observable, oldValue, newValue) -> {
+            if(!newValue){
+                final int[] dis = {0};
+
+                parent.getChildren().stream().forEach(n -> {
+                    HBox hBox = (HBox) n;
+                    TextField textField = (TextField) hBox.getChildren().get(0);
+                    dis[0] += PlanUtils.calculateDistance(textField.getText());
+
+                });
+
+                labelDistance.setText("Distanz: " + dis[0] +"m");
+            }
+        }));
+
+        btnAdd.setOnAction((ActionEvent e) ->{
+            int index = parent.getChildren().indexOf(row);
+            parent.getChildren().add(index+1, addEmptyLine(parent));
+
+        });
+
+        btnRemove.setOnAction((ActionEvent e) -> {
+            ObservableList<Node> childs = parent.getChildren();
+            if(childs.size() == 1){
+                cell1.setText("");
+                cell2.setText("");
+            }
+            else {
+                childs.remove(row);
+            }
+        });
+
+        row.getChildren().addAll(cell1, cell2, btnAdd, btnRemove);
+
+        HBox.setHgrow(cell2, Priority.ALWAYS);
+        return row;
+    }
+
 }
