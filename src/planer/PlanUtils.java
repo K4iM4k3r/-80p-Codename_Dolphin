@@ -18,18 +18,12 @@ public class PlanUtils {
 
     public static boolean readFromFile(Path path) {
         try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-            Pattern p = Pattern.compile("(((\\d+)(\\s*[x*]){0,1}\\s*(\\d*))m)(.)*");
             String line = reader.readLine();
             String content = "";
             int distance = 0;
 
             while (line != null){
-                Matcher m = p.matcher(line);
-
-                if(m.matches()){
-                    int pre = Integer.parseInt(m.group(3));
-                    distance += m.group(4) == null ? pre : pre * Integer.parseInt(m.group(5));
-                }
+                distance += calculateDistance(line);
                 content += line + "\n";
                 line = reader.readLine();
             }
@@ -40,6 +34,18 @@ public class PlanUtils {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static int calculateDistance(String in){
+        int result = 0;
+        Pattern p = Pattern.compile("(((\\d+)(\\s*[x*]){0,1}\\s*(\\d*))m)(.)*");
+        Matcher m = p.matcher(in);
+
+        if(m.matches()){
+            int pre = Integer.parseInt(m.group(3));
+            result = m.group(4) == null ? pre : pre * Integer.parseInt(m.group(5));
+        }
+        return result;
     }
 
 
