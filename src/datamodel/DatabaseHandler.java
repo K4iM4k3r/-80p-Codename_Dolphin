@@ -97,6 +97,23 @@ public class DatabaseHandler {
         return Optional.empty();
     }
 
+    public int deletePlan(int id){
+        try {
+            String query = "DELETE FROM plan WHERE id= ?";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+            int res = statement.executeUpdate();
+
+            if(res == 0){
+                return -1;
+            }
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
     public ResultSet selectAllPlan(){
 
         try {
