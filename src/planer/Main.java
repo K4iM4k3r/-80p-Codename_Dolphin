@@ -3,6 +3,8 @@ package planer;
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
 import javafx.application.Application;
+import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -23,13 +25,6 @@ import java.util.regex.Pattern;
 
 public class Main extends Application {
     private String projectname = "Project - Dolphin";
-//    private TableView<Uebung> table = new TableView<>();
-//    private final ObservableList<Uebung> data =
-//            FXCollections.observableArrayList(
-//                    new Uebung("100m", "Einschwimmen"),
-//                    new Uebung("4x 50m", "Johnson")
-//
-//            );
     private Stage actualStage;
     private Scene main;
     private Scene planview;
@@ -38,6 +33,8 @@ public class Main extends Application {
     private Label labelDistance;
     private VBox list;
     private int actID = -1;
+    private DatabaseHandler db = new DatabaseHandler();
+    private ObservableList<String> data = FXCollections.observableArrayList();
 
 
     @Override
@@ -45,7 +42,7 @@ public class Main extends Application {
 
         actualStage = stage;
         stage.setTitle(projectname);
-        stage.getIcons().add(new Image("file:Logo - 64x64.png"));
+        stage.getIcons().add(new Image("file:icons\\Logo - 64x64.png"));
         stage.setMinWidth(600);
         stage.setMinHeight(500);
         stage.setWidth(600);
@@ -86,7 +83,6 @@ public class Main extends Application {
 
         savePlan.setOnAction((ActionEvent e) -> {
 
-            DatabaseHandler db = new DatabaseHandler();
             final int[] dis = {0};
             StringBuffer content = new StringBuffer();
 
@@ -161,39 +157,13 @@ public class Main extends Application {
         grid.setHgap(10);
         grid.setVgap(10);
 
+
+
         Button open = new Button("open Plan");
         createPlan = new Button("new Plan");
         createPlan.setOnAction(this::switchScene);
+        open.setOnAction(i ->openPlan(2));
 
-        open.setOnAction((ActionEvent e) -> {
-            DatabaseHandler db = new DatabaseHandler();
-            Optional<Plan> planOptional = db.selectPlan(2);
-
-            if(planOptional.isPresent()) {
-                Plan plan = planOptional.get();
-                actID = plan.getId();
-                list.getChildren().clear();
-                labelDistance.setText("Distanz: " + plan.getDistance() + "m");
-                String[] lines = plan.getContent().split("\n");
-                Pattern p = Pattern.compile("(((\\d+)(\\s*[x*])?\\s*(\\d*))m)(.)*");
-                for (String s : lines) {
-                    Matcher m = p.matcher(s);
-                    if (m.matches()) {
-                        String distance = m.group(1);
-                        String unit = s.substring(distance.length());
-                        list.getChildren().add(addLine(distance, unit));
-                    }
-                    else {
-                        list.getChildren().add(addLine("", s));
-                    }
-
-                }
-
-                stage.setScene(planview);
-                
-
-            }
-        });
 
         Button btn = new Button("Click me!");
         btn.setOnAction((ActionEvent e)  ->  {
@@ -207,11 +177,74 @@ public class Main extends Application {
             }
         });
 
+
+        ListView<String> searchview = new ListView<>();
+        searchview.setPrefSize(300, 400);
+        searchview.setStyle("-fx-background-insets: 0 ;");
+
+        searchview.setCellFactory(l -> {
+            ListCell<String> cell = new ListCell<>();
+            ContextMenu menu = new ContextMenu();
+            MenuItem openItem = new MenuItem();
+
+            openItem.textProperty().bind(Bindings.format("Open ", cell.itemProperty()));
+            openItem.setOnAction((ActionEvent e ) -> {
+                String input = cell.getItem();
+                input = input.substring(0, input.indexOf(" -"));
+                openPlan(Integer.parseInt(input));
+            });
+
+            MenuItem deleteItem = new MenuItem();
+
+            deleteItem.textProperty().setValue("Delete");
+            deleteItem.setOnAction((ActionEvent e) -> {
+                String input = cell.getItem();
+                input = input.substring(0, input.indexOf(" -"));
+                db.deletePlan(Integer.parseInt(input));
+                searchview.getItems().remove(cell.getItem());
+            });
+
+
+
+            menu.getItems().setAll(openItem, deleteItem);
+            cell.textProperty().bind(cell.itemProperty());
+
+            cell.emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
+                if (isNowEmpty) {
+                    cell.setContextMenu(null);
+                } else {
+                    cell.setContextMenu(menu);
+                }
+            });
+            cell.setOnMousePressed(c -> {
+                if(c.isPrimaryButtonDown()){
+                    String input = searchview.getSelectionModel().getSelectedItem();
+                    input = input.substring(0, input.indexOf(" -"));
+                    openPlan(Integer.parseInt(input));
+                }
+            });
+
+            return cell;
+        });
+
+        CheckBox checkBox = new CheckBox("alle Pläne anzeigen");
+        checkBox.setOnAction(a ->{
+            if( checkBox.isSelected()){
+                data = db.selectAllPlan();
+                searchview.setItems(data);
+            }
+            else{
+                searchview.getItems().clear();
+            }
+        });
+
         grid.add(btn,0,0 );
         grid.add(horsep,0 ,1);
         grid.add(errorlog,0,2);
         grid.add(createPlan, 1,0);
         grid.add(open, 2,0);
+        grid.add(searchview, 0,3,3,2);
+        grid.add(checkBox, 0,5);
 
         main = new Scene(grid);
 
@@ -230,6 +263,35 @@ public class Main extends Application {
             actualStage.setScene(main);
         }
         else{
+            list.getChildren().clear();
+            list.getChildren().add(addEmptyLine());
+            labelDistance.setText("Distanz: ");
+            actualStage.setScene(planview);
+        }
+    }
+
+    private void openPlan(int id){
+        Optional<Plan> planOptional = db.selectPlan(id);
+
+        if(planOptional.isPresent()) {
+            Plan plan = planOptional.get();
+            actID = plan.getId();
+            list.getChildren().clear();
+            labelDistance.setText("Distanz: " + plan.getDistance() + "m");
+            String[] lines = plan.getContent().split("\n");
+            Pattern p = Pattern.compile("(((\\d+)(\\s*[x*])?\\s*(\\d*))m)(.)*");
+            for (String s : lines) {
+                Matcher m = p.matcher(s);
+                if (m.matches()) {
+                    String distance = m.group(1);
+                    String unit = s.substring(distance.length());
+                    list.getChildren().add(addLine(distance, unit));
+                }
+                else {
+                    list.getChildren().add(addLine("", s));
+                }
+
+            }
             actualStage.setScene(planview);
         }
     }
@@ -251,7 +313,10 @@ public class Main extends Application {
         cell1.setText(distace);
         cell2.setText(unit);
         btnAdd.setText("new Line");
+//        btnAdd.setGraphic(new ImageView(new Image("file:icons\\addLine.png")));
         btnRemove.setText("remove");
+//        btnRemove.setGraphic(new ImageView(new Image("file:icons\\deleteLine.png").));
+
 
         cell1.focusedProperty().addListener(((observable, oldValue, newValue) -> {
             if(!newValue){
