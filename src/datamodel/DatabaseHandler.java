@@ -1,7 +1,11 @@
 package datamodel;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
 import java.io.File;
 import java.sql.*;
+import java.util.Observable;
 import java.util.Optional;
 
 /**
@@ -114,19 +118,27 @@ public class DatabaseHandler {
         }
     }
 
-    public ResultSet selectAllPlan(){
+    public ObservableList<String> selectAllPlan(){
+        ObservableList<String> data = FXCollections.observableArrayList();
 
         try {
             String query = "SELECT * FROM  Plan";
             Statement stmt =  stmt = connection.createStatement();
             ResultSet rs =  stmt.executeQuery(query);
 
-            return rs;
+            while(rs.next()){
+                int maxLength = 100;
+                String summary = rs.getString(2);
+                summary = summary.length() > maxLength ? summary.substring(0, maxLength)+ "\n..." : summary;
+
+                data.add(rs.getString(1) + " - " + summary);
+            }
+
 
         } catch (SQLException e) {
             e.printStackTrace();
-            return null;
         }
+        return data;
     }
 
 }
