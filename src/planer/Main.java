@@ -198,10 +198,17 @@ public class Main extends Application {
 
             deleteItem.textProperty().setValue("Delete");
             deleteItem.setOnAction((ActionEvent e) -> {
-                String input = cell.getItem();
-                input = input.substring(0, input.indexOf(" -"));
-                db.deletePlan(Integer.parseInt(input));
-                searchview.getItems().remove(cell.getItem());
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Löschen");
+                alert.setContentText("Sind Sie sicher das der Plan gelöscht werden soll?");
+                Optional<ButtonType> result = alert.showAndWait();
+
+                if(result.isPresent() && result.get() == ButtonType.OK){
+                    String input = cell.getItem();
+                    input = input.substring(0, input.indexOf(" -"));
+                    db.deletePlan(Integer.parseInt(input));
+                    searchview.getItems().remove(cell.getItem());
+                }
             });
 
 
@@ -284,7 +291,7 @@ public class Main extends Application {
                 Matcher m = p.matcher(s);
                 if (m.matches()) {
                     String distance = m.group(1);
-                    String unit = s.substring(distance.length());
+                    String unit = s.substring(distance.length()+1);
                     list.getChildren().add(addLine(distance, unit));
                 }
                 else {
