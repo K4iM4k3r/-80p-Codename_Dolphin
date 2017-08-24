@@ -122,7 +122,7 @@ public class DatabaseHandler {
 
         try {
             String query = "SELECT * FROM  Plan";
-            Statement stmt =  stmt = connection.createStatement();
+            Statement stmt = connection.createStatement();
             ResultSet rs =  stmt.executeQuery(query);
 
             while(rs.next()){
@@ -145,6 +145,44 @@ public class DatabaseHandler {
             String query = "INSERT INTO tag (name) VALUES (?)";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, name);
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int setTagOnPlan(int plan, int tag){
+        try {
+            String query = "INSERT INTO plan_tag (id_plan, id_tag) VALUES (?, ?)";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, plan);
+            statement.setInt(2, tag);
+
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int removeTagOnPlan(int plan, int tag){
+        try{
+            String query = "DELETE FROM plan_tag WHERE id_plan=? AND id_tag=?;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, plan);
+            statement.setInt(2, tag);
+
             int res = statement.executeUpdate();
             if(res == 0){
                 return -1;
