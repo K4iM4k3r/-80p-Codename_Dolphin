@@ -54,7 +54,7 @@ public class TagList {
         StringBuilder builder = new StringBuilder();
         changes.forEach(s -> {
             builder.append(s);
-            builder.append(",");
+            builder.append(", ");
         });
         return builder.length() > 0 ? builder.substring(0, builder.length()-1) : " " ;
     }

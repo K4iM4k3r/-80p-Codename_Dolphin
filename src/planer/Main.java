@@ -1,9 +1,9 @@
 package planer;
 
-import com.sun.javafx.image.IntPixelGetter;
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
 import datamodel.TagList;
+
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -21,9 +21,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +40,7 @@ public class Main extends Application {
     private ObservableList<String> data = FXCollections.observableArrayList();
     private TagList tagList;
     private Label tagged;
+    private Label errorLog;
 
 
     @Override
@@ -54,7 +54,7 @@ public class Main extends Application {
         stage.setWidth(600);
         stage.setHeight(500);
 
-        Label errorlog = new Label();
+        errorLog = new Label();
 
         Separator horsep = new Separator(Orientation.HORIZONTAL);
         horsep.setVisible(true);
@@ -81,10 +81,13 @@ public class Main extends Application {
         labelDistance = new Label("Distanz: ");
         TitledPane tagPane = new TitledPane();
         BorderPane containerTags = new BorderPane();
+        HBox tagControll = new HBox();
         tagged = new Label();
         Button addTag = new Button("add");
 
         tagList = db.getAllTagsOnPlan(actID);
+        tagControll.setSpacing(10);
+        tagControll.setAlignment(Pos.CENTER_RIGHT);
 //        tagged.setText(tagList.toTagString());
 
         ComboBox<String>  tags = new ComboBox<>(tagList.getData());
@@ -96,9 +99,9 @@ public class Main extends Application {
 
         });
 
+        tagControll.getChildren().addAll(tags, addTag);
         containerTags.setLeft(tagged);
-        containerTags.setCenter(tags);
-        containerTags.setRight(addTag);
+        containerTags.setRight(tagControll);
 //        containerTags.getChildren().addAll(tagged, tags, addTag);
         tagPane.setText("Tags");
         tagPane.setContent(containerTags);
@@ -125,21 +128,48 @@ public class Main extends Application {
 
 
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         /* Layout des Main-Fensters
          *
          */
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(15,15,15,15));
-//        grid.setGridLinesVisible(true);
-//        grid.setAlignment(Pos.CENTER);
-        grid.setHgap(10);
-        grid.setVgap(10);
+        BorderPane pane = new BorderPane();
+        VBox verticalBox = new VBox();
+        HBox shortCut = new HBox();
+        verticalBox.setPadding(new Insets(15,15,15,15));
+        verticalBox.setSpacing(15);
+        shortCut.setSpacing(20);
+//        verticalBox.setGridLinesVisible(true);
+//        verticalBox.setAlignment(Pos.CENTER);
+//        verticalBox.setHgap(10);
+//        verticalBox.setVgap(10);
 
-
+        /*
+         *   Menu
+         */
+        MenuBar menuBar = new MenuBar();
+        Menu menuFile = new Menu("File");
+        MenuItem menuNew = new MenuItem("New");
+        MenuItem menuLoad = new MenuItem("Load");
+        MenuItem menuOpen = new MenuItem("Open Random");
+        
+        menuNew.setOnAction(i -> newPlan());
+        menuLoad.setOnAction(this::loadPlan);
+        menuOpen.setOnAction(i -> {
+            Random random = new Random();
+            int numberOfPlan = db.getNumberOfPlan();
+            if(numberOfPlan != -1){
+                openPlan(random.nextInt(numberOfPlan));
+            }
+        });
+        menuFile.getItems().addAll(menuNew, menuLoad, menuOpen);
+        menuBar.getMenus().add(menuFile);
         
 
+
+        /*
+         *  MainPane
+         */
         Button open = new Button("open Plan");
         createPlan = new Button("new Plan");
         createPlan.setOnAction(this::switchScene);
@@ -147,17 +177,7 @@ public class Main extends Application {
 
 
         Button btn = new Button("Click me!");
-        btn.setOnAction((ActionEvent e)  ->  {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TEXT", "*.txt"));
-            File file = fileChooser.showOpenDialog(stage);
-            if(file != null && file.isFile() && file.canRead()){
-                String res = (PlanUtils.readFromFile(file.toPath()) ? " erfolgreich geladen!" : " konnte nicht geladen werden!");
-                errorlog.setText(file.getName() + res );
-                System.out.println(file.getAbsolutePath() + res );
-
-            }
-        });
+        btn.setOnAction(this::loadPlan);
 
 
         ListView<String> searchview = new ListView<>();
@@ -191,7 +211,7 @@ public class Main extends Application {
                     int id = Integer.parseInt(input);
                     db.deletePlan(id);
                     searchview.getItems().remove(cell.getItem());
-                    errorlog.setText("Plan mit der ID("+id+") gelöscht!");
+                    errorLog.setText("Plan mit der ID("+id+") gelöscht!");
                 }
             });
 
@@ -229,15 +249,21 @@ public class Main extends Application {
             }
         });
 
-        grid.add(btn,0,0 );
-        grid.add(horsep,0 ,1,3,1);
-        grid.add(createPlan, 1,0);
-        grid.add(open, 2,0);
-        grid.add(searchview, 0,3,3,2);
-        grid.add(checkBox, 0,5);
-        grid.add(errorlog,1,5);
+        shortCut.getChildren().addAll(btn, createPlan, open);
+        verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, checkBox, errorLog);
+//        verticalBox.add(btn,0,0 );
+//        verticalBox.add(horsep,0 ,1,3,1);
+//        verticalBox.add(createPlan, 1,0);
+//        verticalBox.add(open, 2,0);
+//        verticalBox.add(searchview, 0,3,3,2);
+//        verticalBox.add(checkBox, 0,5);
+//        verticalBox.add(errorLog,1,5);
+//        verticalBox.add(menuBar,0,6);
 
-        main = new Scene(grid);
+        pane.setTop(menuBar);
+        pane.setCenter(verticalBox);
+
+        main = new Scene(pane);
 
         stage.setScene(main);
         stage.show();
@@ -254,11 +280,31 @@ public class Main extends Application {
             actualStage.setScene(main);
         }
         else{
-            list.getChildren().clear();
-            list.getChildren().add(addEmptyLine());
-            labelDistance.setText("Distanz: ");
-            actualStage.setScene(planview);
+            newPlan();
         }
+    }
+    
+    private void loadPlan(ActionEvent e){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TEXT", "*.txt"));
+        File file = fileChooser.showOpenDialog(actualStage);
+        if(file != null && file.isFile() && file.canRead()){
+            String res = (PlanUtils.readFromFile(file.toPath()) ? " erfolgreich geladen!" : " konnte nicht geladen werden!");
+            errorLog.setText(file.getName() + res );
+            System.out.println(file.getAbsolutePath() + res );
+
+        }
+    }
+    
+    private void newPlan(){
+        actID = -1;
+        list.getChildren().clear();
+        list.getChildren().add(addEmptyLine());
+        labelDistance.setText("Distanz: ");
+        actualStage.setScene(planview);
+        tagList.clear();
+        tagged.setText("");
+
     }
 
     private void openPlan(int id){
