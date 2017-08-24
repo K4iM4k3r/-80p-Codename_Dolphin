@@ -5,6 +5,8 @@ import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.sql.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -195,20 +197,42 @@ public class DatabaseHandler {
         }
     }
 
-    public ObservableList<String> selectAllTag(){
-        ObservableList<String> result = FXCollections.observableArrayList();
+    public Map<String, Integer> selectAllTag(){
         try {
             String query = "SELECT * FROM tag";
             PreparedStatement statement = connection.prepareStatement(query);
             ResultSet resultSet = statement.executeQuery();
+            return createTagMap(resultSet);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new LinkedHashMap<>();
+        }
+    }
 
-            while(resultSet.next()){
-                result.add(resultSet.getString("name"));
+    public Optional<TagList> getAllTagsOnPlan(int id){
+        try{
+            String querry = "SELECT id_tag, id_plan, name FROM plan_tag INNER JOIN tag ON plan_tag.id=tag.id WHERE id_plan=?";
+            PreparedStatement statement = connection.prepareStatement(querry);
+            ResultSet resultSet = statement.executeQuery();
+            return  Optional.of(new TagList(createTagMap(resultSet)));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
+    }
+
+    private Map<String, Integer> createTagMap(ResultSet rs){
+        Map<String, Integer> result = new LinkedHashMap<>();
+        try {
+            while(rs.next()){
+                result.put(rs.getString("name" ), rs.getInt(1));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return result;
     }
+
+
 
 }
