@@ -5,7 +5,6 @@ import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.sql.*;
-import java.util.Observable;
 import java.util.Optional;
 
 /**
@@ -139,6 +138,23 @@ public class DatabaseHandler {
             e.printStackTrace();
         }
         return data;
+    }
+
+    public int addTag(String name){
+        try {
+            String query = "INSERT INTO tag (name) VALUES (?)";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setString(1, name);
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 
 }
