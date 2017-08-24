@@ -228,4 +228,18 @@ public class DatabaseHandler {
         }
         return null;
     }
+
+    public int getNumberOfPlan(){
+        try {
+            String query = "SELECT count(id) FROM plan";
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet rs = statement.executeQuery();
+            if(rs.next()){
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
 }
