@@ -16,7 +16,7 @@ public class TagList {
     private int id;
 
 
-    public TagList(Map<String, Integer> mapAllTag, List<String> tagPlan , int id){
+    TagList(Map<String, Integer> mapAllTag, List<String> tagPlan , int id){
         this.mapAllTag = mapAllTag;
         this.id = id;
         this.tagPlan = tagPlan;
@@ -34,10 +34,6 @@ public class TagList {
         else{
             changes.add(tag);
         }
-    }
-
-    public void setChanges(DatabaseHandler db){
-        saveChanges(db, id);
     }
 
     public void saveChanges(DatabaseHandler db, int newId){
