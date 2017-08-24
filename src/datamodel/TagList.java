@@ -58,4 +58,10 @@ public class TagList {
         });
         return builder.length() > 0 ? builder.substring(0, builder.length()-1) : " " ;
     }
+
+    public void clear(){
+        this.tagPlan.clear();
+        this.changes.clear();
+        this.id = -1;
+    }
 }
