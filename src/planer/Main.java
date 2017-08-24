@@ -1,7 +1,9 @@
 package planer;
 
+import com.sun.javafx.image.IntPixelGetter;
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
+import datamodel.TagList;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -19,6 +21,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,6 +39,8 @@ public class Main extends Application {
     private int actID = -1;
     private DatabaseHandler db = new DatabaseHandler();
     private ObservableList<String> data = FXCollections.observableArrayList();
+    private TagList tagList;
+    private Label tagged;
 
 
     @Override
@@ -48,7 +54,7 @@ public class Main extends Application {
         stage.setWidth(600);
         stage.setHeight(500);
 
-        Label errorlog = new Label("Hello World");
+        Label errorlog = new Label();
 
         Separator horsep = new Separator(Orientation.HORIZONTAL);
         horsep.setVisible(true);
@@ -73,70 +79,44 @@ public class Main extends Application {
 
         Label label = new Label("Ihr Trainingsplan");
         labelDistance = new Label("Distanz: ");
+        TitledPane tagPane = new TitledPane();
+        BorderPane containerTags = new BorderPane();
+        tagged = new Label();
+        Button addTag = new Button("add");
+
+        tagList = db.getAllTagsOnPlan(actID);
+//        tagged.setText(tagList.toTagString());
+
+        ComboBox<String>  tags = new ComboBox<>(tagList.getData());
+        tags.getSelectionModel().selectFirst();
+        addTag.setOnAction((ActionEvent e) -> {
+            String selectedTag = tags.getSelectionModel().getSelectedItem();
+            tagList.changeTag(selectedTag);
+            tagged.setText(tagList.toTagString());
+
+        });
+
+        containerTags.setLeft(tagged);
+        containerTags.setCenter(tags);
+        containerTags.setRight(addTag);
+//        containerTags.getChildren().addAll(tagged, tags, addTag);
+        tagPane.setText("Tags");
+        tagPane.setContent(containerTags);
+
+
+
         Button savePlan = new Button("save");
         exit = new Button("exit");
         exit.setOnAction(this::switchScene);
 
+        savePlan.setOnAction(this::savePlan);
 
-
-
-
-        savePlan.setOnAction((ActionEvent e) -> {
-
-            final int[] dis = {0};
-            StringBuffer content = new StringBuffer();
-
-            list.getChildren().forEach(n -> {
-                HBox hBox = (HBox) n;
-                String unitDistance = ((TextField) hBox.getChildren().get(0)).getText();
-                String unitPractice = ((TextField) hBox.getChildren().get(1)).getText();
-
-                dis[0] += PlanUtils.calculateDistance(unitDistance);
-
-                if(!unitPractice.isEmpty()){
-                    content.append(unitDistance).append(" ").append(unitPractice).append("\n");
-                }
-
-
-            });
-
-            if(actID != -1){
-                Alert dialogAlert = new Alert(Alert.AlertType.CONFIRMATION);
-                dialogAlert.setTitle("Überschreiben?");
-                dialogAlert.setHeaderText("Alten Plan überschreiben?");
-                dialogAlert.setContentText("Oder als einen neuen Plan anlegen");
-
-                ButtonType buttonNew = new ButtonType("Neuen");
-                ButtonType buttonOverride = new ButtonType("Überschreiben");
-                ButtonType buttonCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-                dialogAlert.getButtonTypes().setAll(buttonNew, buttonOverride, buttonCancel);
-
-                Optional<ButtonType> result = dialogAlert.showAndWait();
-
-                if(result.isPresent()){
-                    if (result.get() == buttonNew){
-                        actID = db.addPlan(dis[0], content.toString());
-                    }
-                    else if (result.get() == buttonOverride){
-                        db.updatePlan(actID, dis[0], content.toString());
-
-                    }
-                }
-            }
-            else{
-                actID = db.addPlan(dis[0], content.toString());
-            }
-
-
-            //TODO Toast ode ähnliches
-        });
 
 
         list.getChildren().addAll(addEmptyLine());
         scrollPane.setContent(list);
         actions.getChildren().addAll(savePlan, exit);
-        footer.getChildren().addAll(labelDistance, actions);
+        footer.getChildren().addAll(tagPane, labelDistance, actions);
         borderPane.setTop(label);
         borderPane.setCenter(scrollPane);
         borderPane.setBottom(footer);
@@ -158,6 +138,7 @@ public class Main extends Application {
         grid.setVgap(10);
 
 
+        
 
         Button open = new Button("open Plan");
         createPlan = new Button("new Plan");
@@ -168,6 +149,7 @@ public class Main extends Application {
         Button btn = new Button("Click me!");
         btn.setOnAction((ActionEvent e)  ->  {
             FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TEXT", "*.txt"));
             File file = fileChooser.showOpenDialog(stage);
             if(file != null && file.isFile() && file.canRead()){
                 String res = (PlanUtils.readFromFile(file.toPath()) ? " erfolgreich geladen!" : " konnte nicht geladen werden!");
@@ -206,8 +188,10 @@ public class Main extends Application {
                 if(result.isPresent() && result.get() == ButtonType.OK){
                     String input = cell.getItem();
                     input = input.substring(0, input.indexOf(" -"));
-                    db.deletePlan(Integer.parseInt(input));
+                    int id = Integer.parseInt(input);
+                    db.deletePlan(id);
                     searchview.getItems().remove(cell.getItem());
+                    errorlog.setText("Plan mit der ID("+id+") gelöscht!");
                 }
             });
 
@@ -246,12 +230,12 @@ public class Main extends Application {
         });
 
         grid.add(btn,0,0 );
-        grid.add(horsep,0 ,1);
-        grid.add(errorlog,0,2);
+        grid.add(horsep,0 ,1,3,1);
         grid.add(createPlan, 1,0);
         grid.add(open, 2,0);
         grid.add(searchview, 0,3,3,2);
         grid.add(checkBox, 0,5);
+        grid.add(errorlog,1,5);
 
         main = new Scene(grid);
 
@@ -299,8 +283,64 @@ public class Main extends Application {
                 }
 
             }
+            tagList = db.getAllTagsOnPlan(actID);
+            tagged.setText(tagList.toTagString());
+
             actualStage.setScene(planview);
         }
+    }
+
+    private void savePlan(ActionEvent e){
+        final int[] dis = {0};
+        StringBuffer content = new StringBuffer();
+        boolean update = false;
+
+        list.getChildren().forEach(n -> {
+            HBox hBox = (HBox) n;
+            String unitDistance = ((TextField) hBox.getChildren().get(0)).getText();
+            String unitPractice = ((TextField) hBox.getChildren().get(1)).getText();
+
+            dis[0] += PlanUtils.calculateDistance(unitDistance);
+
+            if(!unitPractice.isEmpty()){
+                content.append(unitDistance).append(" ").append(unitPractice).append("\n");
+            }
+
+
+        });
+
+        if(actID != -1){
+            Alert dialogAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            dialogAlert.setTitle("Überschreiben?");
+            dialogAlert.setHeaderText("Alten Plan überschreiben?");
+            dialogAlert.setContentText("Oder als einen neuen Plan anlegen");
+
+            ButtonType buttonNew = new ButtonType("Neuen");
+            ButtonType buttonOverride = new ButtonType("Überschreiben");
+            ButtonType buttonCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            dialogAlert.getButtonTypes().setAll(buttonNew, buttonOverride, buttonCancel);
+
+            Optional<ButtonType> result = dialogAlert.showAndWait();
+
+            if(result.isPresent()){
+                if (result.get() == buttonNew){
+                    actID = db.addPlan(dis[0], content.toString());
+                }
+                else if (result.get() == buttonOverride){
+                    db.updatePlan(actID, dis[0], content.toString());
+                }
+            }
+        }
+        else{
+            actID = db.addPlan(dis[0], content.toString());
+        }
+
+        tagList.saveChanges(db, actID);
+        tagList = db.getAllTagsOnPlan(actID);
+
+
+        //TODO Toast ode ähnliches
     }
 
     private HBox addEmptyLine(){
