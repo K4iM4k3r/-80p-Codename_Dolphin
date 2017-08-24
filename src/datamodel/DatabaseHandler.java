@@ -195,4 +195,20 @@ public class DatabaseHandler {
         }
     }
 
+    public ObservableList<String> selectAllTag(){
+        ObservableList<String> result = FXCollections.observableArrayList();
+        try {
+            String query = "SELECT * FROM tag";
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+
+            while(resultSet.next()){
+                result.add(resultSet.getString("name"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
 }
