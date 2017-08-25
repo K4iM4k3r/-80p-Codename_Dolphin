@@ -140,7 +140,7 @@ public class DatabaseHandler {
         return data;
     }
 
-    public int addTag(String name){
+    public int addUserTag(String name){
         try {
             String query = "INSERT INTO tag (name) VALUES (?)";
             PreparedStatement statement = connection.prepareStatement(query);
@@ -151,6 +151,39 @@ public class DatabaseHandler {
             }
             return res;
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int updateUserTag(int id, String value){
+        try {
+            String query = "UPDATE tag SET name=? WHERE id=?";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setString(1, value);
+            statement.setInt(2, id);
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int deleteTag(int id){
+        try{
+            String query = "DELETE FROM tag WHERE id=?";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
         } catch (SQLException e) {
             e.printStackTrace();
             return -1;
@@ -195,7 +228,7 @@ public class DatabaseHandler {
         }
     }
 
-    private Map<String, Integer> selectAllTag(){
+    public Map<String, Integer> selectAllTag(){
         Map<String, Integer> result = new LinkedHashMap<>();
         try {
             String query = "SELECT * FROM tag";
