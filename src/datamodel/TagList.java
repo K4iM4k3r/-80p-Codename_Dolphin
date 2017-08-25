@@ -43,11 +43,15 @@ public class TagList {
                     changes.remove(s);
                 }
                 else{
-                    db.removeTagOnPlan(newId, mapAllTag.get(s));
+                    db.removeTagOnPlan(newId, getId(s));
                 }
             }
         }
-        changes.forEach(t -> db.setTagOnPlan(newId, mapAllTag.get(t)));
+        changes.forEach(t -> db.setTagOnPlan(newId, getId(t)));
+    }
+
+    public int getId(String in){
+        return mapAllTag.get(in);
     }
 
     public String toTagString() {
@@ -64,4 +68,10 @@ public class TagList {
         this.changes.clear();
         this.id = -1;
     }
+
+    public void updateAllTag(DatabaseHandler db){
+        this.mapAllTag = db.selectAllTag();
+    }
+
+
 }
