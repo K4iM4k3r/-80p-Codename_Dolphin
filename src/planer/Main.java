@@ -161,6 +161,7 @@ public class Main extends Application {
             if(numberOfPlan != -1){
                 openPlan(random.nextInt(numberOfPlan));
             }
+            errorLog.setText("open " + numberOfPlan);
         });
         menuFile.getItems().addAll(menuNew, menuLoad, menuOpen);
         menuBar.getMenus().add(menuFile);
@@ -173,7 +174,7 @@ public class Main extends Application {
         Button open = new Button("open Plan");
         createPlan = new Button("new Plan");
         createPlan.setOnAction(this::switchScene);
-        open.setOnAction(i ->openPlan(2));
+        open.setOnAction(i -> openPlan(2));
 
 
         Button btn = new Button("Click me!");

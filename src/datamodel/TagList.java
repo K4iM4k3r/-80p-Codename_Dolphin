@@ -56,7 +56,7 @@ public class TagList {
             builder.append(s);
             builder.append(", ");
         });
-        return builder.length() > 0 ? builder.substring(0, builder.length()-1) : " " ;
+        return builder.length() > 1 ? builder.substring(0, builder.length()-2) : " " ;
     }
 
     public void clear(){
