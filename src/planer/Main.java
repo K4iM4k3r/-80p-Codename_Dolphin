@@ -3,12 +3,13 @@ package planer;
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
 import datamodel.TagList;
-
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -16,7 +17,11 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
-import javafx.scene.layout.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -31,6 +36,7 @@ public class Main extends Application {
     private Stage actualStage;
     private Scene main;
     private Scene planview;
+    private Scene tagEditor;
     private Button exit;
     private Button createPlan;
     private Label labelDistance;
@@ -41,6 +47,7 @@ public class Main extends Application {
     private TagList tagList;
     private Label tagged;
     private Label errorLog;
+    private ComboBox<String> tags;
 
 
     @Override
@@ -54,12 +61,7 @@ public class Main extends Application {
         stage.setWidth(600);
         stage.setHeight(500);
 
-        errorLog = new Label();
-
-        Separator horsep = new Separator(Orientation.HORIZONTAL);
-        horsep.setVisible(true);
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /* Layout des Planeditors
          *
          */
@@ -90,7 +92,7 @@ public class Main extends Application {
         tagControll.setAlignment(Pos.CENTER_RIGHT);
 //        tagged.setText(tagList.toTagString());
 
-        ComboBox<String>  tags = new ComboBox<>(tagList.getData());
+        tags = new ComboBox<>(tagList.getData());
         tags.getSelectionModel().selectFirst();
         addTag.setOnAction((ActionEvent e) -> {
             String selectedTag = tags.getSelectionModel().getSelectedItem();
@@ -126,6 +128,72 @@ public class Main extends Application {
 
         planview = new Scene(borderPane);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /*
+         *   Layout des Tageditors
+         */
+        HBox tagEditorBox = new HBox();
+        ListView<String> allActTag = new ListView<>(tagList.getData());
+        TextField inputField = new TextField();
+        Button changeTag = new Button("add");
+        Button deleteTag = new Button("delete");
+        Button exitTagScene = new Button("exit");
+
+        deleteTag.setVisible(false);
+        allActTag.setCellFactory((ListView<String> lv) -> {
+            ListCell<String> listCell = new ListCell<>();
+            SelectionModel<String> selectionModel = allActTag.getSelectionModel();
+            listCell.textProperty().bind(listCell.itemProperty());
+            listCell.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                allActTag.requestFocus();
+                if (!listCell.isEmpty()) {
+                    int idx;
+                    idx = listCell.getIndex();
+                    if (selectionModel.getSelectedIndex() == idx) {
+                        selectionModel.clearSelection();
+                        inputField.setText("");
+                        deleteTag.setVisible(false);
+                        changeTag.setText("Add");
+                    } else {
+                        selectionModel.select(idx);
+                        inputField.setText(selectionModel.getSelectedItem());
+                        deleteTag.setVisible(true);
+                        changeTag.setText("Change");
+                    }
+                    event.consume();
+                }
+            });
+            return listCell;
+        });
+        changeTag.setOnAction(i -> {
+            if(allActTag.getSelectionModel().isEmpty() && !inputField.getText().isEmpty() && allActTag.getItems().contains(inputField)){
+                db.addUserTag(inputField.getText());
+                //TODO eventuell Information über das vorhanden sein
+            }
+            else if(!allActTag.getSelectionModel().isEmpty() && !inputField.getText().isEmpty()){
+                db.updateUserTag(tagList.getId(allActTag.getSelectionModel().getSelectedItem()), inputField.getText());
+            }
+
+            tagList.updateAllTag(db);
+            allActTag.setItems(tagList.getData());
+        });
+
+        deleteTag.setOnAction(i -> {
+            if(!allActTag.getSelectionModel().isEmpty()){
+                db.deleteTag(tagList.getId(allActTag.getSelectionModel().getSelectedItem()));
+                tagList.updateAllTag(db);
+                allActTag.setItems(tagList.getData());
+                inputField.setText("");
+                deleteTag.setVisible(false);
+            }
+        });
+
+        exitTagScene.setOnAction(this::switchScene);
+        inputField.setPromptText("your tag");
+        tagEditorBox.getChildren().addAll(allActTag, inputField, changeTag, deleteTag, exitTagScene);
+
+        tagEditor = new Scene(tagEditorBox);
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -139,6 +207,9 @@ public class Main extends Application {
         verticalBox.setPadding(new Insets(15,15,15,15));
         verticalBox.setSpacing(15);
         shortCut.setSpacing(20);
+        errorLog = new Label();
+        Separator horsep = new Separator(Orientation.HORIZONTAL);
+        horsep.setVisible(true);
 //        verticalBox.setGridLinesVisible(true);
 //        verticalBox.setAlignment(Pos.CENTER);
 //        verticalBox.setHgap(10);
@@ -152,6 +223,14 @@ public class Main extends Application {
         MenuItem menuNew = new MenuItem("New");
         MenuItem menuLoad = new MenuItem("Load");
         MenuItem menuOpen = new MenuItem("Open Random");
+        Menu menuEdit = new Menu("Edit");
+        MenuItem menuTag = new MenuItem("Tags erstellen");
+
+        menuTag.setOnAction(i -> {
+            actualStage.setScene(tagEditor);
+        });
+        menuEdit.getItems().add(menuTag);
+
         
         menuNew.setOnAction(i -> newPlan());
         menuLoad.setOnAction(this::loadPlan);
@@ -164,7 +243,7 @@ public class Main extends Application {
             errorLog.setText("open " + numberOfPlan);
         });
         menuFile.getItems().addAll(menuNew, menuLoad, menuOpen);
-        menuBar.getMenus().add(menuFile);
+        menuBar.getMenus().addAll(menuFile, menuEdit);
         
 
 
@@ -277,11 +356,11 @@ public class Main extends Application {
 
 
     private void switchScene(ActionEvent e){
-        if(e.getSource().equals(exit)){
-            actualStage.setScene(main);
+        if(e.getSource().equals(createPlan)){
+            newPlan();
         }
         else{
-            newPlan();
+            actualStage.setScene(main);
         }
     }
     
@@ -305,6 +384,7 @@ public class Main extends Application {
         actualStage.setScene(planview);
         tagList.clear();
         tagged.setText("");
+        tags.setItems(tagList.getData());
 
     }
 
@@ -316,6 +396,7 @@ public class Main extends Application {
             actID = plan.getId();
             list.getChildren().clear();
             labelDistance.setText("Distanz: " + plan.getDistance() + "m");
+            tags.setItems(tagList.getData());
             String[] lines = plan.getContent().split("\n");
             Pattern p = Pattern.compile("(((\\d+)(\\s*[x*])?\\s*(\\d*))m)(.)*");
             for (String s : lines) {
