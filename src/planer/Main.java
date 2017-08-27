@@ -74,7 +74,6 @@ public class Main extends Application {
         list = new VBox();
 
 
-
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         actions.setAlignment(Pos.CENTER);
@@ -83,6 +82,9 @@ public class Main extends Application {
 
         Label label = new Label("Ihr Trainingsplan");
         labelDistance = new Label("Distanz: ");
+
+        //TagPane
+        Accordion accordion = new Accordion();
         TitledPane tagPane = new TitledPane();
         BorderPane containerTags = new BorderPane();
         HBox tagControll = new HBox();
@@ -92,7 +94,6 @@ public class Main extends Application {
         tagList = db.getAllTagsOnPlan(actID);
         tagControll.setSpacing(10);
         tagControll.setAlignment(Pos.CENTER_RIGHT);
-//        tagged.setText(tagList.toTagString());
 
         tags = new ComboBox<>(tagList.getData());
         tags.getSelectionModel().selectFirst();
@@ -106,11 +107,27 @@ public class Main extends Application {
         tagControll.getChildren().addAll(tags, addTag);
         containerTags.setLeft(tagged);
         containerTags.setRight(tagControll);
-//        containerTags.getChildren().addAll(tagged, tags, addTag);
         tagPane.setText("Tags");
         tagPane.setContent(containerTags);
 
+        // BookmarkPane
+        TitledPane bookmarkPane = new TitledPane();
+        HBox containerBookmark = new HBox();
+        TextField inputComment = new TextField();
+        Button btnAddBookmark = new Button("add");
 
+        btnAddBookmark.setOnAction(i -> {
+            if(!inputComment.getText().isEmpty()){
+                db.addBookmark(actID, inputComment.getText());
+            }
+        });
+
+        containerBookmark.getChildren().addAll(inputComment, btnAddBookmark);
+        bookmarkPane.setText("Bookmark");
+        bookmarkPane.setContent(containerBookmark);
+
+        accordion.getPanes().addAll(tagPane, bookmarkPane);
+        accordion.setExpandedPane(tagPane);
 
         Button savePlan = new Button("save");
         exit = new Button("exit");
@@ -123,7 +140,7 @@ public class Main extends Application {
         list.getChildren().addAll(addEmptyLine());
         scrollPane.setContent(list);
         actions.getChildren().addAll(savePlan, exit);
-        footer.getChildren().addAll(tagPane, labelDistance, actions);
+        footer.getChildren().addAll(accordion, labelDistance, actions);
         borderPane.setTop(label);
         borderPane.setCenter(scrollPane);
         borderPane.setBottom(footer);
