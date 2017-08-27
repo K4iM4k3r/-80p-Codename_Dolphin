@@ -5,6 +5,9 @@ import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.sql.*;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -293,4 +296,44 @@ public class DatabaseHandler {
             return Optional.empty();
         }
     }
+
+    public int addBookmark(int id, String comment){
+        try {
+            String query = "INSERT INTO bookmark (id_plan, comment, added) VALUES (?, ?, ?);";
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+            statement.setString(2, comment);
+            statement.setString(3, df.format(Calendar.getInstance().getTime()));
+
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int removeBookmark(int id){
+        try {
+            String query = "DELETE FROM bookmark WHERE id=?;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+
+            int res = statement.executeUpdate();
+            if(res == 0){
+                return -1;
+            }
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+
 }
