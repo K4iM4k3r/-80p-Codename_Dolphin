@@ -286,7 +286,7 @@ public class DatabaseHandler {
              ids.add(rs.getInt(1));
             }
             Random random = new Random();
-            return selectPlan(random.nextInt(ids.size()));
+            return selectPlan(ids.get(random.nextInt(ids.size())));
 
         } catch (SQLException e) {
             e.printStackTrace();
