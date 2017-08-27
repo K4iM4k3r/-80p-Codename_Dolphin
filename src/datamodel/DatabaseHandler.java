@@ -317,11 +317,11 @@ public class DatabaseHandler {
         }
     }
 
-    public int removeBookmark(int id){
+    public int removeBookmark(String comment){
         try {
-            String query = "DELETE FROM bookmark WHERE id=?;";
+            String query = "DELETE FROM bookmark WHERE comment=?;";
             PreparedStatement statement = connection.prepareStatement(query);
-            statement.setInt(1, id);
+            statement.setString(1, comment);
 
             int res = statement.executeUpdate();
             if(res == 0){
@@ -337,7 +337,7 @@ public class DatabaseHandler {
     public ObservableList<String> selectAllBookmarks(){
         ObservableList<String> list = FXCollections.observableArrayList();
         try{
-            String query = "SELECT * FROM bookmarks;";
+            String query = "SELECT * FROM bookmark;";
             PreparedStatement statement = connection.prepareStatement(query);
             ResultSet result = statement.executeQuery();
             while(result.next()){

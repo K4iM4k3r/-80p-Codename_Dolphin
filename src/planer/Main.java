@@ -3,8 +3,11 @@ package planer;
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
 import datamodel.TagList;
+
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -25,7 +28,6 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,12 +42,14 @@ public class Main extends Application {
     private Label labelDistance;
     private VBox list;
     private int actID = -1;
+    private int stateListView = 0;
     private DatabaseHandler db = new DatabaseHandler();
     private ObservableList<String> data = FXCollections.observableArrayList();
     private TagList tagList;
     private Label tagged;
     private Label errorLog;
     private ComboBox<String> tags;
+    private ListView<String> searchview;
 
 
     @Override
@@ -173,7 +177,7 @@ public class Main extends Application {
             }
             else{
                 if(allActTag.getSelectionModel().isEmpty()){
-                    if(allActTag.getSelectionModel().getSelectedItem().equals(userInput)){
+                    if(allActTag.getItems().contains(userInput)){
                         labelFeedback.setText("Info: Ihre Eingabe -" + userInput + "- existiert schon" );
                     }
                     else {
@@ -223,16 +227,14 @@ public class Main extends Application {
         BorderPane pane = new BorderPane();
         VBox verticalBox = new VBox();
         HBox shortCut = new HBox();
+        HBox toggleItems = new HBox();
         verticalBox.setPadding(new Insets(15,15,15,15));
         verticalBox.setSpacing(15);
         shortCut.setSpacing(20);
         errorLog = new Label();
         Separator horsep = new Separator(Orientation.HORIZONTAL);
         horsep.setVisible(true);
-//        verticalBox.setGridLinesVisible(true);
-//        verticalBox.setAlignment(Pos.CENTER);
-//        verticalBox.setHgap(10);
-//        verticalBox.setVgap(10);
+
 
         /*
          *   Menu
@@ -250,7 +252,6 @@ public class Main extends Application {
         });
         menuEdit.getItems().add(menuTag);
 
-        
         menuNew.setOnAction(i -> newPlan());
         menuLoad.setOnAction(this::loadPlan);
         menuOpen.setOnAction(i -> {
@@ -265,16 +266,41 @@ public class Main extends Application {
          *  MainPane
          */
         Button open = new Button("open Plan");
+        Button btn = new Button("Click me!");
         createPlan = new Button("new Plan");
+
+
+        //ActionHandler für die Buttons
         createPlan.setOnAction(this::switchScene);
         open.setOnAction(i -> openPlan(2));
-
-
-        Button btn = new Button("Click me!");
         btn.setOnAction(this::loadPlan);
 
 
-        ListView<String> searchview = new ListView<>();
+        ToggleGroup toggleOptions = new ToggleGroup();
+        ToggleButton showAllPlans = new ToggleButton("all Plans");
+        ToggleButton showBookmarks = new ToggleButton("Bookmarks");
+
+        showAllPlans.setToggleGroup(toggleOptions);
+        showBookmarks.setToggleGroup(toggleOptions);
+
+        toggleOptions.selectedToggleProperty().addListener((observable, oldToggle, newToggle) -> {
+            if(newToggle == null){
+                stateListView = 0;
+                searchview.getItems().clear();
+            }
+            else if(newToggle.equals(showAllPlans)){
+                stateListView = 1;
+                data = db.selectAllPlan();
+                searchview.setItems(data);
+            }
+            else {
+                stateListView = 2;
+                data = db.selectAllBookmarks();
+                searchview.setItems(data);
+            }
+        });
+
+        searchview = new ListView<>();
         searchview.setPrefSize(300, 400);
         searchview.setStyle("-fx-background-insets: 0 ;");
 
@@ -286,6 +312,9 @@ public class Main extends Application {
             openItem.textProperty().bind(Bindings.format("Open ", cell.itemProperty()));
             openItem.setOnAction((ActionEvent e ) -> {
                 String input = cell.getItem();
+                if(stateListView == 2){
+                    input = input.replace("Plan ", "");
+                }
                 input = input.substring(0, input.indexOf(" -"));
                 openPlan(Integer.parseInt(input));
             });
@@ -294,18 +323,29 @@ public class Main extends Application {
 
             deleteItem.textProperty().setValue("Delete");
             deleteItem.setOnAction((ActionEvent e) -> {
+
+
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                 alert.setTitle("Löschen");
-                alert.setContentText("Sind Sie sicher das der Plan gelöscht werden soll?");
+                alert.setContentText("Sind Sie sicher das der Eintrag gelöscht werden soll?");
                 Optional<ButtonType> result = alert.showAndWait();
 
                 if(result.isPresent() && result.get() == ButtonType.OK){
                     String input = cell.getItem();
-                    input = input.substring(0, input.indexOf(" -"));
-                    int id = Integer.parseInt(input);
-                    db.deletePlan(id);
-                    searchview.getItems().remove(cell.getItem());
-                    errorLog.setText("Plan mit der ID("+id+") gelöscht!");
+
+                    if(stateListView == 1){
+                        input = input.substring(0, input.indexOf(" -"));
+                        int id = Integer.parseInt(input);
+                        db.deletePlan(id);
+                        searchview.getItems().remove(cell.getItem());
+                        errorLog.setText("Plan mit der ID("+id+") gelöscht!");
+                    }
+                    else{
+                        input = input.substring(input.indexOf(" - ") + 3);
+                        db.removeBookmark(input);
+                        searchview.getItems().remove(cell.getItem());
+                        errorLog.setText("Das Lesezeichen ("+ input +") wurde gelöscht!");
+                    }
                 }
             });
 
@@ -324,6 +364,9 @@ public class Main extends Application {
             cell.setOnMousePressed(c -> {
                 if(c.isPrimaryButtonDown()){
                     String input = searchview.getSelectionModel().getSelectedItem();
+                    if(stateListView == 2){
+                        input = input.replace("Plan ", "");
+                    }
                     input = input.substring(0, input.indexOf(" -"));
                     openPlan(Integer.parseInt(input));
                 }
@@ -343,8 +386,11 @@ public class Main extends Application {
             }
         });
 
+        toggleItems.setSpacing(20.0);
+
         shortCut.getChildren().addAll(btn, createPlan, open);
-        verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, checkBox, errorLog);
+        toggleItems.getChildren().addAll(showAllPlans, showBookmarks);
+        verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, checkBox, toggleItems, errorLog);
 //        verticalBox.add(btn,0,0 );
 //        verticalBox.add(horsep,0 ,1,3,1);
 //        verticalBox.add(createPlan, 1,0);
