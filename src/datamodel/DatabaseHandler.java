@@ -275,4 +275,22 @@ public class DatabaseHandler {
         }
         return -1;
     }
+
+    public Optional<Plan> getRandomPlan(){
+        try{
+            String query = "SELECT id FROM plan;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet rs = statement.executeQuery();
+            List<Integer> ids = new ArrayList<>();
+            while(rs.next()){
+             ids.add(rs.getInt(1));
+            }
+            Random random = new Random();
+            return selectPlan(random.nextInt(ids.size()));
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
 }
