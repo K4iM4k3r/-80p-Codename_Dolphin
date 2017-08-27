@@ -5,7 +5,6 @@ import javafx.collections.ObservableList;
 
 import java.io.File;
 import java.sql.*;
-import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -333,6 +332,21 @@ public class DatabaseHandler {
             e.printStackTrace();
             return -1;
         }
+    }
+
+    public ObservableList<String> selectAllBookmarks(){
+        ObservableList<String> list = FXCollections.observableArrayList();
+        try{
+            String query = "SELECT * FROM bookmarks;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            ResultSet result = statement.executeQuery();
+            while(result.next()){
+                list.add("Plan " + result.getString(2)+ " - " + result.getString(3));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
 
