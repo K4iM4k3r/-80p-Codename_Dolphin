@@ -8,8 +8,6 @@ import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -133,8 +131,11 @@ public class Main extends Application {
          *   Layout des Tageditors
          */
         HBox tagEditorBox = new HBox();
+        VBox tagControllVertical = new VBox();
+        HBox tagControlHorizontal = new HBox();
         ListView<String> allActTag = new ListView<>(tagList.getData());
         TextField inputField = new TextField();
+        Label labelFeedback = new Label("Info:");
         Button changeTag = new Button("add");
         Button deleteTag = new Button("delete");
         Button exitTagScene = new Button("exit");
@@ -166,12 +167,28 @@ public class Main extends Application {
             return listCell;
         });
         changeTag.setOnAction(i -> {
-            if(allActTag.getSelectionModel().isEmpty() && !inputField.getText().isEmpty() && allActTag.getItems().contains(inputField)){
-                db.addUserTag(inputField.getText());
-                //TODO eventuell Information über das vorhanden sein
+            String userInput = inputField.getText();
+            if(userInput.isEmpty()){
+                labelFeedback.setText("Info: Ihre Eingabe ist leer");
             }
-            else if(!allActTag.getSelectionModel().isEmpty() && !inputField.getText().isEmpty()){
-                db.updateUserTag(tagList.getId(allActTag.getSelectionModel().getSelectedItem()), inputField.getText());
+            else{
+                if(allActTag.getSelectionModel().isEmpty()){
+                    if(allActTag.getSelectionModel().getSelectedItem().equals(userInput)){
+                        labelFeedback.setText("Info: Ihre Eingabe -" + userInput + "- existiert schon" );
+                    }
+                    else {
+                        db.addUserTag(userInput);
+                        labelFeedback.setText("Info: Sie haben den Tag "+ userInput +" erstellt");
+                    }
+                }
+                else{
+                    String selectedTag = allActTag.getSelectionModel().getSelectedItem();
+                    db.updateUserTag(tagList.getId(selectedTag), userInput);
+                    labelFeedback.setText("Info: Sie haben "+ selectedTag + " zu " + userInput + " geändert");
+                    inputField.setText("");
+                    deleteTag.setVisible(false);
+                    changeTag.setText("Add");
+                }
             }
 
             tagList.updateAllTag(db);
@@ -185,16 +202,18 @@ public class Main extends Application {
                 allActTag.setItems(tagList.getData());
                 inputField.setText("");
                 deleteTag.setVisible(false);
+                changeTag.setText("Add");
+
             }
         });
 
         exitTagScene.setOnAction(this::switchScene);
         inputField.setPromptText("your tag");
-        tagEditorBox.getChildren().addAll(allActTag, inputField, changeTag, deleteTag, exitTagScene);
+        tagControlHorizontal.getChildren().addAll(inputField, changeTag, deleteTag, exitTagScene);
+        tagControllVertical.getChildren().addAll(tagControlHorizontal, labelFeedback);
+        tagEditorBox.getChildren().addAll(allActTag, tagControllVertical);
 
         tagEditor = new Scene(tagEditorBox);
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -235,12 +254,7 @@ public class Main extends Application {
         menuNew.setOnAction(i -> newPlan());
         menuLoad.setOnAction(this::loadPlan);
         menuOpen.setOnAction(i -> {
-            Random random = new Random();
-            int numberOfPlan = db.getNumberOfPlan();
-            if(numberOfPlan != -1){
-                openPlan(random.nextInt(numberOfPlan));
-            }
-            errorLog.setText("open " + numberOfPlan);
+            db.getRandomPlan().ifPresent(this::openPlan);
         });
         menuFile.getItems().addAll(menuNew, menuLoad, menuOpen);
         menuBar.getMenus().addAll(menuFile, menuEdit);
@@ -388,34 +402,36 @@ public class Main extends Application {
 
     }
 
+    private void openPlan(Plan plan){
+        actID = plan.getId();
+        list.getChildren().clear();
+        labelDistance.setText("Distanz: " + plan.getDistance() + "m");
+        tags.setItems(tagList.getData());
+        String[] lines = plan.getContent().split("\n");
+        Pattern p = Pattern.compile("(((\\d+)(\\s*[x*])?\\s*(\\d*))m)(.)*");
+        for (String s : lines) {
+            Matcher m = p.matcher(s);
+            if (m.matches()) {
+                String distance = m.group(1);
+                String unit = s.substring(distance.length()+1);
+                list.getChildren().add(addLine(distance, unit));
+            }
+            else {
+                list.getChildren().add(addLine("", s));
+            }
+
+        }
+        tagList = db.getAllTagsOnPlan(actID);
+        tagged.setText(tagList.toTagString());
+        errorLog.setText("open " + actID);
+
+
+        actualStage.setScene(planview);
+    }
+
     private void openPlan(int id){
         Optional<Plan> planOptional = db.selectPlan(id);
-
-        if(planOptional.isPresent()) {
-            Plan plan = planOptional.get();
-            actID = plan.getId();
-            list.getChildren().clear();
-            labelDistance.setText("Distanz: " + plan.getDistance() + "m");
-            tags.setItems(tagList.getData());
-            String[] lines = plan.getContent().split("\n");
-            Pattern p = Pattern.compile("(((\\d+)(\\s*[x*])?\\s*(\\d*))m)(.)*");
-            for (String s : lines) {
-                Matcher m = p.matcher(s);
-                if (m.matches()) {
-                    String distance = m.group(1);
-                    String unit = s.substring(distance.length()+1);
-                    list.getChildren().add(addLine(distance, unit));
-                }
-                else {
-                    list.getChildren().add(addLine("", s));
-                }
-
-            }
-            tagList = db.getAllTagsOnPlan(actID);
-            tagged.setText(tagList.toTagString());
-
-            actualStage.setScene(planview);
-        }
+        planOptional.ifPresent(this::openPlan);
     }
 
     private void savePlan(ActionEvent e){
