@@ -23,6 +23,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -284,6 +285,7 @@ public class Main extends Application {
          */
         Button open = new Button("open Plan");
         Button btn = new Button("Click me!");
+        Button btnExport = new Button("export");
         createPlan = new Button("new Plan");
 
 
@@ -291,6 +293,14 @@ public class Main extends Application {
         createPlan.setOnAction(this::switchScene);
         open.setOnAction(i -> openPlan(2));
         btn.setOnAction(this::loadPlan);
+        btnExport.setOnAction(i -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            File selecetedFile = directoryChooser.showDialog(actualStage);
+            if(selecetedFile != null){
+                PlanUtils.exportPlan(selecetedFile.toPath(), db.selectPlan(actID).get());
+            }
+
+        });
 
 
         ToggleGroup toggleOptions = new ToggleGroup();
@@ -405,7 +415,7 @@ public class Main extends Application {
 
         toggleItems.setSpacing(20.0);
 
-        shortCut.getChildren().addAll(btn, createPlan, open);
+        shortCut.getChildren().addAll(btn, createPlan, open, btnExport);
         toggleItems.getChildren().addAll(showAllPlans, showBookmarks);
         verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, checkBox, toggleItems, errorLog);
 //        verticalBox.add(btn,0,0 );

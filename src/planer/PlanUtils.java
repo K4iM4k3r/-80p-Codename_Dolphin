@@ -1,8 +1,12 @@
 package planer;
 
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfWriter;
 import datamodel.DatabaseHandler;
+import datamodel.Plan;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,7 +52,52 @@ public class PlanUtils {
         return result;
     }
 
+    public static void exportPlan(Path path, Plan plan){
+        Document document = new Document();
+
+        try {
+            PdfWriter.getInstance(document, new FileOutputStream(path.toFile() + "/plan 2.pdf"));
+
+            document.open();
+
+            Paragraph p = new Paragraph();
+            p.setFont(new Font(Font.FontFamily.HELVETICA, 14f, Font.BOLD));
+//            p.add(input.getText().toString()+"\n");
+            document.add(p);
 
 
+            //Add paragraph to the document
+            String[] content = plan.getContent().split("\n");
 
+            for(int i = 0; i < content.length; i+=2){
+                p = new Paragraph();
+                p.setTabSettings(new TabSettings(65f));
+                p.setFont(new Font(Font.FontFamily.HELVETICA, 14f, Font.NORMAL));
+                p.add(new Chunk(content[i]));
+//                p.add(Chunk.TABBING);
+//                p.add(new Chunk(content.get(i+1)));
+//                if(i != content.size()-1){
+//                    p.add("\n\n");
+//                }
+                document.add(p);
+
+
+            }
+            p = new Paragraph();
+            p.setTabSettings(new TabSettings(65f));
+            p.setFont(new Font(Font.FontFamily.HELVETICA, 14f, Font.NORMAL));
+            p.add("__________\n");
+            p.add(Integer.toString(plan.getDistance()) + "m");
+            document.add(p);
+
+            p = new Paragraph();
+//            p.add("\n\n\n\nSwimplan "+getActivity().getResources().getString(R.string.app_version) +" Plan ("+ id +")\n© Kai Schäfer");
+            document.add(p);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        //Close document
+        document.close();
+    }
 }
