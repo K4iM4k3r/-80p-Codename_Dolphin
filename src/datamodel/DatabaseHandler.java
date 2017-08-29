@@ -329,7 +329,7 @@ public class DatabaseHandler {
         return list;
     }
 
-    public ObservableList<String> searchPlanByUser(ArrayList<String> userInput){
+    public Optional<ObservableList<String>> searchPlanByUser(ArrayList<String> userInput){
         try {
             String prequery = "SELECT id_plan, name, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE";
             String postquery = " GROUP BY id_plan HAVING hits=?";
@@ -343,12 +343,12 @@ public class DatabaseHandler {
             statement.setInt(1, userInput.size());
             ResultSet rs = statement.executeQuery();
 
-            return makeListFromResult(rs);
+            return Optional.of(makeListFromResult(rs));
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return Optional.empty();
     }
 
     private ObservableList<String> makeListFromResult(ResultSet rs) throws SQLException {

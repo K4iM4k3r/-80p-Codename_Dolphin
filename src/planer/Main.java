@@ -19,10 +19,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -71,6 +69,8 @@ public class Main extends Application {
         BorderPane borderPane = new BorderPane();
         ScrollPane scrollPane = new ScrollPane();
         VBox footer = new VBox();
+        VBox header = new VBox();
+        HBox heading = new HBox();
         HBox actions = new HBox();
         list = new VBox();
 
@@ -80,10 +80,36 @@ public class Main extends Application {
         actions.setAlignment(Pos.CENTER);
         actions.setSpacing(10);
         actions.setPadding(new Insets(10,10,10,10));
+        heading.setSpacing(50.0);
+
+        // MenuBar
+        MenuBar menuBarPlan = new MenuBar();
+        Menu menuFilePlan = new Menu("File");
+        MenuItem menuItemSave = new MenuItem("Save");
+        MenuItem menuItemExport = new MenuItem("Export PDF");
+
+        menuItemSave.setOnAction(this::savePlan);
+        menuItemExport.setOnAction(this::exportPlan);
+
+        menuFilePlan.getItems().addAll(menuItemSave, menuItemExport);
+        menuBarPlan.getMenus().add(menuFilePlan);
+
+
+        Label headingDistance = new Label("Distanz");
+        Label headingPractice = new Label("Übung");
+
+//        headingDistance.setEditable(false);
+//        headingPractice.setEditable(false);
+//        headingDistance.setDisable(true);
+//        headingPractice.setDisable(true);
+//        headingDistance.setBorder(Border.EMPTY);
+        headingDistance.setFont(Font.font(14.0));
+        headingPractice.setFont(Font.font(14.0));
+        headingDistance.setMinWidth(100);
+        headingPractice.setMinWidth(300);
 
         Label label = new Label("Ihr Trainingsplan");
         labelDistance = new Label("Distanz: ");
-
         //TagPane
         Accordion accordion = new Accordion();
         TitledPane tagPane = new TitledPane();
@@ -140,9 +166,11 @@ public class Main extends Application {
 
         list.getChildren().addAll(addEmptyLine());
         scrollPane.setContent(list);
+        heading.getChildren().addAll(headingDistance, headingPractice);
         actions.getChildren().addAll(savePlan, exit);
+        header.getChildren().addAll(menuBarPlan, label, heading);
         footer.getChildren().addAll(accordion, labelDistance, actions);
-        borderPane.setTop(label);
+        borderPane.setTop(header);
         borderPane.setCenter(scrollPane);
         borderPane.setBottom(footer);
 
@@ -294,11 +322,7 @@ public class Main extends Application {
         open.setOnAction(i -> openPlan(2));
         btn.setOnAction(this::loadPlan);
         btnExport.setOnAction(i -> {
-            DirectoryChooser directoryChooser = new DirectoryChooser();
-            File selecetedFile = directoryChooser.showDialog(actualStage);
-            if(selecetedFile != null){
-                PlanUtils.exportPlan(selecetedFile.toPath(), db.selectPlan(actID).get());
-            }
+
 
         });
 
@@ -402,31 +426,12 @@ public class Main extends Application {
             return cell;
         });
 
-        CheckBox checkBox = new CheckBox("alle Pläne anzeigen");
-        checkBox.setOnAction(a ->{
-            if( checkBox.isSelected()){
-                data = db.selectAllPlan();
-                searchview.setItems(data);
-            }
-            else{
-                searchview.getItems().clear();
-            }
-        });
 
         toggleItems.setSpacing(20.0);
 
         shortCut.getChildren().addAll(btn, createPlan, open, btnExport);
         toggleItems.getChildren().addAll(showAllPlans, showBookmarks);
-        verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, checkBox, toggleItems, errorLog);
-//        verticalBox.add(btn,0,0 );
-//        verticalBox.add(horsep,0 ,1,3,1);
-//        verticalBox.add(createPlan, 1,0);
-//        verticalBox.add(open, 2,0);
-//        verticalBox.add(searchview, 0,3,3,2);
-//        verticalBox.add(checkBox, 0,5);
-//        verticalBox.add(errorLog,1,5);
-//        verticalBox.add(menuBar,0,6);
-
+        verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, toggleItems, errorLog);
         pane.setTop(menuBar);
         pane.setCenter(verticalBox);
 
@@ -558,6 +563,16 @@ public class Main extends Application {
 
 
         //TODO Toast ode ähnliches
+    }
+
+    private void exportPlan(ActionEvent e){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Plan");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        File selectedFile = fileChooser.showSaveDialog(actualStage);
+        if(selectedFile != null){
+            db.selectPlan(actID).ifPresent( p -> PlanUtils.exportPlan(selectedFile, p));
+        }
     }
 
     private HBox addEmptyLine(){

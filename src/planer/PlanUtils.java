@@ -6,6 +6,7 @@ import datamodel.DatabaseHandler;
 import datamodel.Plan;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -52,11 +53,11 @@ public class PlanUtils {
         return result;
     }
 
-    public static void exportPlan(Path path, Plan plan){
+    public static void exportPlan(File path, Plan plan){
         Document document = new Document();
 
         try {
-            PdfWriter.getInstance(document, new FileOutputStream(path.toFile() + "/plan 2.pdf"));
+            PdfWriter.getInstance(document, new FileOutputStream(path));
 
             document.open();
 
