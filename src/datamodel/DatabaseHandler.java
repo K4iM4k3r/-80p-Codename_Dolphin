@@ -137,26 +137,17 @@ public class DatabaseHandler {
     }
 
     public ObservableList<String> selectAllPlan(){
-        ObservableList<String> data = FXCollections.observableArrayList();
-
         try {
             String query = "SELECT * FROM  Plan";
             Statement stmt = connection.createStatement();
             ResultSet rs =  stmt.executeQuery(query);
 
-            while(rs.next()){
-                int maxLength = 100;
-                String summary = rs.getString(2);
-                summary = summary.length() > maxLength ? summary.substring(0, maxLength)+ "\n..." : summary;
-
-                data.add(rs.getString(1) + " - " + summary);
-            }
-
+            return makeListFromResult(rs);
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return data;
+        return null;
     }
 
     public void addUserTag(String name){
@@ -338,5 +329,38 @@ public class DatabaseHandler {
         return list;
     }
 
+    public ObservableList<String> searchPlanByUser(ArrayList<String> userInput){
+        try {
+            String prequery = "SELECT id_plan, name, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE";
+            String postquery = " GROUP BY id_plan HAVING hits=?";
+            for(int i = 0;  i < userInput.size(); i++){
+                if(i > 0){
+                    prequery += " OR ";
+                }
+                prequery += "name=\"" + userInput.get(i) + "\"";
+            }
+            PreparedStatement statement = connection.prepareStatement(prequery + postquery);
+            statement.setInt(1, userInput.size());
+            ResultSet rs = statement.executeQuery();
+
+            return makeListFromResult(rs);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private ObservableList<String> makeListFromResult(ResultSet rs) throws SQLException {
+        ObservableList<String> lst = FXCollections.observableArrayList();
+        while(rs.next()){
+            int maxLength = 100;
+            String summary = rs.getString(2);
+            summary = summary.length() > maxLength ? summary.substring(0, maxLength)+ "\n..." : summary;
+
+            lst.add(rs.getString(1) + " - " + summary);
+        }
+        return lst;
+    }
 
 }
