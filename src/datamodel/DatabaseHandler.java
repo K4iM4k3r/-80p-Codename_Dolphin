@@ -32,7 +32,7 @@ public class DatabaseHandler {
         }
     }
 
-    void connect() {
+    private void connect() {
         try {
             String driver = "org.sqlite.JDBC";
             Class.forName(driver);
@@ -64,24 +64,19 @@ public class DatabaseHandler {
         return -1;
     }
 
-    public int updatePlan(int id, int distance , String content){
+    public void updatePlan(int id, int distance , String content){
         String query = "UPDATE plan SET distanz= ?, inhalt= ? WHERE id = ?; ";
         try{
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, distance);
             statement.setString(2, content);
             statement.setInt(3, id);
-            int res = statement.executeUpdate();
-            
-            if(res == 0 ){
-                return -1;
-            }
-            return 1;
+
+            statement.executeUpdate();
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return -1;
     }
 
 
@@ -102,20 +97,42 @@ public class DatabaseHandler {
         return Optional.empty();
     }
 
-    public int deletePlan(int id){
+    public void deletePlan(int id){
         try {
             String query = "DELETE FROM plan WHERE id= ?";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, id);
-            int res = statement.executeUpdate();
 
-            if(res == 0){
-                return -1;
-            }
-            return res;
+            statement.executeUpdate();
+            deleteAllTagOnPlan(id);
+            deleteAllBookmarksOnPlan(id);
+
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
+        }
+    }
+
+    private void deleteAllTagOnPlan(int id){
+        try {
+            String query = "DELETE FROM plan_tag WHERE id_plan=?;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteAllBookmarksOnPlan(int id){
+        try {
+            String query = "DELETE FROM bookmark WHERE id_plan=?;";
+            PreparedStatement statement = connection.prepareStatement(query);
+            statement.setInt(1, id);
+
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -142,53 +159,41 @@ public class DatabaseHandler {
         return data;
     }
 
-    public int addUserTag(String name){
+    public void addUserTag(String name){
         try {
             String query = "INSERT INTO tag (name) VALUES (?)";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, name);
-            int res = statement.executeUpdate();
-            if(res == 0){
-                return -1;
-            }
-            return res;
+            statement.executeUpdate();
 
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
-    public int updateUserTag(int id, String value){
+    public void updateUserTag(int id, String value){
         try {
             String query = "UPDATE tag SET name=? WHERE id=?";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, value);
             statement.setInt(2, id);
-            int res = statement.executeUpdate();
-            if(res == 0){
-                return -1;
-            }
-            return res;
+
+            statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
-    public int deleteTag(int id){
+    public void deleteTag(int id){
         try{
             String query = "DELETE FROM tag WHERE id=?";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, id);
-            int res = statement.executeUpdate();
-            if(res == 0){
-                return -1;
-            }
-            return res;
+
+            statement.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
@@ -211,26 +216,20 @@ public class DatabaseHandler {
         }
     }
 
-    int removeTagOnPlan(int plan, int tag){
+    void removeTagOnPlan(int plan, int tag){
         try{
             String query = "DELETE FROM plan_tag WHERE id_plan=? AND id_tag=?;";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setInt(1, plan);
             statement.setInt(2, tag);
 
-            int res = statement.executeUpdate();
-            if(res == 0){
-                return -1;
-            }
-            return res;
-
+            statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
-    public Map<String, Integer> selectAllTag(){
+    Map<String, Integer> selectAllTag(){
         Map<String, Integer> result = new LinkedHashMap<>();
         try {
             String query = "SELECT * FROM tag";
@@ -296,7 +295,7 @@ public class DatabaseHandler {
         }
     }
 
-    public int addBookmark(int id, String comment){
+    public void addBookmark(int id, String comment){
         try {
             String query = "INSERT INTO bookmark (id_plan, comment, added) VALUES (?, ?, ?);";
             DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -305,32 +304,22 @@ public class DatabaseHandler {
             statement.setString(2, comment);
             statement.setString(3, df.format(Calendar.getInstance().getTime()));
 
-            int res = statement.executeUpdate();
-            if(res == 0){
-                return -1;
-            }
-            return res;
-
+            statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
-    public int removeBookmark(String comment){
+    public void removeBookmark(String comment){
         try {
             String query = "DELETE FROM bookmark WHERE comment=?;";
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, comment);
 
-            int res = statement.executeUpdate();
-            if(res == 0){
-                return -1;
-            }
-            return res;
+            statement.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
-            return -1;
         }
     }
 
