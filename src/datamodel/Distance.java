@@ -6,7 +6,7 @@ package datamodel;
  */
 public enum Distance {
     LOW(" distanz <  2000"),
-    SHORT(" distance >= 2000 AND distance < 3000"),
+    SHORT(" distanz >= 2000 AND distanz < 3000"),
     MEDIUM(" distanz >= 3000 AND distanz < 4000"),
     LONG(" distanz >= 4000");
 

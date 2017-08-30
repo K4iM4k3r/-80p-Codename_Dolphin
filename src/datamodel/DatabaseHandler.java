@@ -329,10 +329,10 @@ public class DatabaseHandler {
         return list;
     }
 
-    public Optional<ObservableList<String>> searchPlanByUser(ArrayList<String> userInput){
+    public Optional<ObservableList<String>> searchPlanByUser(ObservableList<String> userInput, String distance){
         try {
-            String prequery = "SELECT id_plan, name, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE";
-            String postquery = " GROUP BY id_plan HAVING hits=?";
+            String prequery = "SELECT id_plan, name, inhalt, distanz, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE ";
+            String postquery = " GROUP BY id_plan HAVING hits=? AND " + distance;
             for(int i = 0;  i < userInput.size(); i++){
                 if(i > 0){
                     prequery += " OR ";
@@ -355,7 +355,7 @@ public class DatabaseHandler {
         ObservableList<String> lst = FXCollections.observableArrayList();
         while(rs.next()){
             int maxLength = 100;
-            String summary = rs.getString(2);
+            String summary = rs.getString("inhalt");
             summary = summary.length() > maxLength ? summary.substring(0, maxLength)+ "\n..." : summary;
 
             lst.add(rs.getString(1) + " - " + summary);
