@@ -1,6 +1,7 @@
 package planer;
 
 import datamodel.DatabaseHandler;
+import datamodel.Distance;
 import datamodel.Plan;
 import datamodel.TagList;
 
@@ -48,7 +49,11 @@ public class Main extends Application {
     private Label tagged;
     private Label errorLog;
     private ComboBox<String> tags;
+    private TextField inputKeywords;
+    private ToggleGroup toggleDistance;
     private ListView<String> searchview;
+    private ListView<String> allActTag;
+    private ListView<String> selectionTags;
 
 
     @Override
@@ -95,14 +100,9 @@ public class Main extends Application {
         menuBarPlan.getMenus().add(menuFilePlan);
 
 
+        // Überschrift
         Label headingDistance = new Label("Distanz");
         Label headingPractice = new Label("Übung");
-
-//        headingDistance.setEditable(false);
-//        headingPractice.setEditable(false);
-//        headingDistance.setDisable(true);
-//        headingPractice.setDisable(true);
-//        headingDistance.setBorder(Border.EMPTY);
         headingDistance.setFont(Font.font(14.0));
         headingPractice.setFont(Font.font(14.0));
         headingDistance.setMinWidth(100);
@@ -183,7 +183,7 @@ public class Main extends Application {
         HBox tagEditorBox = new HBox();
         VBox tagControllVertical = new VBox();
         HBox tagControlHorizontal = new HBox();
-        ListView<String> allActTag = new ListView<>(tagList.getData());
+        allActTag = new ListView<>(tagList.getData());
         TextField inputField = new TextField();
         Label labelFeedback = new Label("Info:");
         Button changeTag = new Button("add");
@@ -241,15 +241,13 @@ public class Main extends Application {
                 }
             }
 
-            tagList.updateAllTag(db);
-            allActTag.setItems(tagList.getData());
+            refreshAllElementWithData();
         });
 
         deleteTag.setOnAction(i -> {
             if(!allActTag.getSelectionModel().isEmpty()){
                 db.deleteTag(tagList.getId(allActTag.getSelectionModel().getSelectedItem()));
-                tagList.updateAllTag(db);
-                allActTag.setItems(tagList.getData());
+                refreshAllElementWithData();
                 inputField.setText("");
                 deleteTag.setVisible(false);
                 changeTag.setText("Add");
@@ -272,11 +270,14 @@ public class Main extends Application {
          */
         BorderPane pane = new BorderPane();
         VBox verticalBox = new VBox();
+        VBox footerMainPane = new VBox();
         HBox shortCut = new HBox();
         HBox toggleItems = new HBox();
+        VBox toggleDistanceItems = new VBox();
         verticalBox.setPadding(new Insets(15,15,15,15));
         verticalBox.setSpacing(15);
         shortCut.setSpacing(20);
+        footerMainPane.setPadding(new Insets(15,15,15,15));
         errorLog = new Label();
         Separator horsep = new Separator(Orientation.HORIZONTAL);
         horsep.setVisible(true);
@@ -293,16 +294,12 @@ public class Main extends Application {
         Menu menuEdit = new Menu("Edit");
         MenuItem menuTag = new MenuItem("Tags erstellen");
 
-        menuTag.setOnAction(i -> {
-            actualStage.setScene(tagEditor);
-        });
+        menuTag.setOnAction(i -> actualStage.setScene(tagEditor));
         menuEdit.getItems().add(menuTag);
 
         menuNew.setOnAction(i -> newPlan());
         menuLoad.setOnAction(this::loadPlan);
-        menuOpen.setOnAction(i -> {
-            db.getRandomPlan().ifPresent(this::openPlan);
-        });
+        menuOpen.setOnAction(i -> db.getRandomPlan().ifPresent(this::openPlan));
         menuFile.getItems().addAll(menuNew, menuLoad, menuOpen);
         menuBar.getMenus().addAll(menuFile, menuEdit);
         
@@ -327,6 +324,76 @@ public class Main extends Application {
         });
 
 
+
+        /*
+         *  SearchPane
+         */
+        BorderPane search = new BorderPane();
+        selectionTags = new ListView<>(tagList.getData());
+        Button btnSearch = new Button("search");
+        Label infoSelectedItems = new Label();
+        inputKeywords = new TextField();
+        toggleDistance = new ToggleGroup();
+        RadioButton lessThanTwo = new RadioButton("< 2km");;
+        RadioButton betweenTwoAndThree = new RadioButton(">=2 km  und <3 km");
+        RadioButton betweenThreeAndFour = new RadioButton(">= 3km und < 4km");
+        RadioButton greaterThanFour = new RadioButton(">= 4km");
+
+        lessThanTwo.setToggleGroup(toggleDistance);
+        betweenTwoAndThree.setToggleGroup(toggleDistance);
+        betweenThreeAndFour.setToggleGroup(toggleDistance);
+        greaterThanFour.setToggleGroup(toggleDistance);
+
+        betweenTwoAndThree.setSelected(true);
+        betweenTwoAndThree.requestFocus();
+
+        lessThanTwo.setUserData(Distance.LOW);
+        betweenTwoAndThree.setUserData(Distance.SHORT);
+        betweenThreeAndFour.setUserData(Distance.MEDIUM);
+        greaterThanFour.setUserData(Distance.LONG);
+        inputKeywords.setPromptText("Freitextsuche");
+
+        toggleDistanceItems.getChildren().addAll(lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
+
+        selectionTags.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        selectionTags.setMaxHeight(250.0);
+        selectionTags.setMaxWidth(100.0);
+        selectionTags.setMinHeight(100.0);
+        selectionTags.setCellFactory((ListView<String> lv) -> {
+            ListCell<String> listCell = new ListCell<>();
+            MultipleSelectionModel<String> selectionModel = selectionTags.getSelectionModel();
+            listCell.textProperty().bind(listCell.itemProperty());
+            listCell.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                allActTag.requestFocus();
+                if (!listCell.isEmpty()) {
+                    int idx;
+                    idx = listCell.getIndex();
+                    if (selectionModel.getSelectedIndices().contains(idx)) {
+                        selectionModel.clearSelection(idx);
+                    } else {
+                        selectionModel.select(idx);
+                    }
+                    StringBuilder s = new StringBuilder();
+                    for(String item : selectionModel.getSelectedItems()){
+                        s.append(item).append(", ");
+                    }
+                    infoSelectedItems.setText(s.length()> 1 ? s.substring(0, s.length()-2) : s.toString());
+                    event.consume();
+                }
+            });
+            return listCell;
+        });
+
+        btnSearch.setOnAction(this::search);
+
+        //search.setTop();
+        search.setLeft(selectionTags);
+        search.setCenter(toggleDistanceItems);
+        search.setRight(btnSearch);
+        search.setBottom(infoSelectedItems);
+
+
+
         ToggleGroup toggleOptions = new ToggleGroup();
         ToggleButton showAllPlans = new ToggleButton("all Plans");
         ToggleButton showBookmarks = new ToggleButton("Bookmarks");
@@ -338,16 +405,19 @@ public class Main extends Application {
             if(newToggle == null){
                 stateListView = 0;
                 searchview.getItems().clear();
+                errorLog.setText("");
             }
             else if(newToggle.equals(showAllPlans)){
                 stateListView = 1;
                 data = db.selectAllPlan();
                 searchview.setItems(data);
+                errorLog.setText("Anzahl Pläne: "+ data.size());
             }
             else {
                 stateListView = 2;
                 data = db.selectAllBookmarks();
                 searchview.setItems(data);
+                errorLog.setText("Anzahl Bookmarks: "+ data.size());
             }
         });
 
@@ -415,11 +485,13 @@ public class Main extends Application {
             cell.setOnMousePressed(c -> {
                 if(c.isPrimaryButtonDown()){
                     String input = searchview.getSelectionModel().getSelectedItem();
-                    if(stateListView == 2){
-                        input = input.replace("Plan ", "");
+                    if(input != null){
+                        if(stateListView == 2){
+                            input = input.replace("Plan ", "");
+                        }
+                        input = input.substring(0, input.indexOf(" -"));
+                        openPlan(Integer.parseInt(input));
                     }
-                    input = input.substring(0, input.indexOf(" -"));
-                    openPlan(Integer.parseInt(input));
                 }
             });
 
@@ -427,13 +499,15 @@ public class Main extends Application {
         });
 
 
-        toggleItems.setSpacing(20.0);
+        toggleItems.setSpacing(15.0);
 
         shortCut.getChildren().addAll(btn, createPlan, open, btnExport);
         toggleItems.getChildren().addAll(showAllPlans, showBookmarks);
-        verticalBox.getChildren().addAll(shortCut, horsep, searchview, menuBar, toggleItems, errorLog);
+        verticalBox.getChildren().addAll(shortCut, search, horsep, searchview);
+        footerMainPane.getChildren().addAll(toggleItems, errorLog);
         pane.setTop(menuBar);
         pane.setCenter(verticalBox);
+        pane.setBottom(footerMainPane);
 
         main = new Scene(pane);
 
@@ -579,7 +653,7 @@ public class Main extends Application {
         return addLine("", "");
     }
 
-    private HBox addLine(String distace, String unit){
+    private HBox addLine(String distance, String unit){
         HBox row = new HBox();
 
         TextField cell1 = new TextField();
@@ -589,7 +663,7 @@ public class Main extends Application {
 
         cell1.setMinWidth(100);
         cell2.setMinWidth(300);
-        cell1.setText(distace);
+        cell1.setText(distance);
         cell2.setText(unit);
         btnAdd.setText("new Line");
 //        btnAdd.setGraphic(new ImageView(new Image("file:icons\\addLine.png")));
@@ -633,6 +707,21 @@ public class Main extends Application {
 
         HBox.setHgrow(cell2, Priority.ALWAYS);
         return row;
+    }
+
+    private void refreshAllElementWithData(){
+        tagList.updateAllTag(db);
+        allActTag.setItems(tagList.getData());
+        selectionTags.setItems(tagList.getData());
+    }
+
+    private void search(ActionEvent e){
+        ObservableList<String> items = selectionTags.getSelectionModel().getSelectedItems();
+        String clause =  ((Distance) toggleDistance.getSelectedToggle().getUserData()).getClause();
+        if(!items.isEmpty()){
+            db.searchPlanByUser(items, clause).ifPresent(searchview::setItems);
+            errorLog.setText("Treffer: " + searchview.getItems().size());
+        }
     }
 
 }
