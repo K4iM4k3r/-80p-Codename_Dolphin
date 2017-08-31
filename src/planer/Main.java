@@ -20,6 +20,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
@@ -94,6 +95,7 @@ public class Main extends Application {
         // MenuBar
         MenuBar menuBarPlan = new MenuBar();
         Menu menuFilePlan = new Menu("File");
+
         MenuItem menuItemSave = new MenuItem("Save");
         MenuItem menuItemExport = new MenuItem("Export PDF");
 
@@ -340,10 +342,10 @@ public class Main extends Application {
         toggleDistance = new ToggleGroup();
         Label labelToggleDistance = new Label("Distanz:");
         RadioButton notImportant = new RadioButton("egal");
-        RadioButton lessThanTwo = new RadioButton("< 2km");;
-        RadioButton betweenTwoAndThree = new RadioButton(">=2 km  und <3 km");
-        RadioButton betweenThreeAndFour = new RadioButton(">= 3km und < 4km");
-        RadioButton greaterThanFour = new RadioButton(">= 4km");
+        RadioButton lessThanTwo = new RadioButton("bis 2km");;
+        RadioButton betweenTwoAndThree = new RadioButton("ab 2km bis 3 km");
+        RadioButton betweenThreeAndFour = new RadioButton("ab 3km bis 4km");
+        RadioButton greaterThanFour = new RadioButton("ab 4km");
 
         lessThanTwo.setToggleGroup(toggleDistance);
         betweenTwoAndThree.setToggleGroup(toggleDistance);
@@ -361,7 +363,22 @@ public class Main extends Application {
         toggleDistance.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             generateSearchLabel();
         });
+
         inputKeywords.setPromptText("Freitextsuche");
+        inputKeywords.setOnKeyPressed(event -> {
+            if(event.getCode().equals(KeyCode.ENTER)){
+                searchKeyword();
+            }
+        });
+        inputKeywords.setOnKeyReleased(event -> {
+            String input = inputKeywords.getText();
+            if(!input.isEmpty()){
+                infoSelectedItems.setText("Suche nach " + input);
+            }
+            else {
+                infoSelectedItems.setText("");
+            }
+        });
 
         toggleDistanceItems.getChildren().addAll(labelToggleDistance, notImportant, lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
 
@@ -746,7 +763,19 @@ public class Main extends Application {
             if(toggle != null) toggle.setSelected(false);
             errorLog.setText("Treffer: " + searchview.getItems().size());
         }
+        else if(!inputKeywords.getText().isEmpty()){
+            searchKeyword();
+        }
     }
+
+    private void searchKeyword(){
+        String input = inputKeywords.getText();
+        if(!input.isEmpty()){
+            db.searchByUserKeyword(input).ifPresent(searchview::setItems);
+            errorLog.setText("Treffer: " + searchview.getItems().size());
+        }
+    }
+
     private void generateSearchLabel(){
         StringBuilder s = new StringBuilder("Suche nach: ");
         for(String item : selectionTags.getSelectionModel().getSelectedItems()){
