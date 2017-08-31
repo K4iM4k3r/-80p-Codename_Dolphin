@@ -98,11 +98,13 @@ public class Main extends Application {
 
         MenuItem menuItemSave = new MenuItem("Save");
         MenuItem menuItemExport = new MenuItem("Export PDF");
+        MenuItem menuItemSend = new MenuItem("Send EMail");
 
         menuItemSave.setOnAction(this::savePlan);
         menuItemExport.setOnAction(this::exportPlan);
+        menuItemSend.setOnAction(this::sendPlan);
 
-        menuFilePlan.getItems().addAll(menuItemSave, menuItemExport);
+        menuFilePlan.getItems().addAll(menuItemSave, menuItemExport, menuItemSend);
         menuBarPlan.getMenus().add(menuFilePlan);
 
 
@@ -787,6 +789,34 @@ public class Main extends Application {
             s.append(" - " + dis);
         }
         infoSelectedItems.setText(s.toString());
+    }
+
+    private void sendPlan(ActionEvent e){
+        getHostServices().showDocument("mailto:%20?subject=My%20Plan&body=" + generatePlanString(true));
+    }
+
+
+    private String generatePlanString(){
+        return generatePlanString(false);
+    }
+    private String generatePlanString(boolean mail){
+        String spacing = mail ? "%20" : " ";
+        String linebreak = mail ? "%0d%0a" : "\n";
+        StringBuilder result = new StringBuilder();
+        for(Node node :  list.getChildren()){
+            HBox row = (HBox) node;
+            TextField distance = (TextField) row.getChildren().get(0);
+            TextField practice = (TextField) row.getChildren().get(1);
+            String stringDistance = distance.getText();
+            String stringPractice = practice.getText();
+            if (mail){
+                stringDistance = stringDistance.replaceAll(" ", spacing);
+                stringPractice = stringPractice.replaceAll(" ", spacing);
+            }
+
+            result.append(stringDistance).append(spacing).append(stringPractice).append(linebreak);
+        }
+        return result.toString();
     }
 
 }
