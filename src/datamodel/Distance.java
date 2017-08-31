@@ -5,19 +5,24 @@ package datamodel;
  * part of 80p - Codename Dolphin
  */
 public enum Distance {
-    LOW(" distanz <  2000"),
-    SHORT(" distanz >= 2000 AND distanz < 3000"),
-    MEDIUM(" distanz >= 3000 AND distanz < 4000"),
-    LONG(" distanz >= 4000");
+    LOW(" distanz <  2000", "Distanz kleiner 2km"),
+    SHORT(" distanz >= 2000 AND distanz < 3000", "Distanz zwischen 2 und 3km"),
+    MEDIUM(" distanz >= 3000 AND distanz < 4000", "Distanz zwischen 3 und 4km"),
+    LONG(" distanz >= 4000", "Distanz über 4km ");
 
     private final String clause;
+    private final String information;
 
-    Distance(String clause){
+    Distance(String clause, String information){
         this.clause = clause;
+        this.information = information;
     }
 
     public String getClause() {
         return clause;
     }
 
+    public String getInformation() {
+        return information;
+    }
 }
