@@ -6,7 +6,7 @@
 
 2.  Was will ich bis zum nächsten Daily Scrum tun?
     
-    - Suche um Freitextsuche erweitern
+    - Suche um Freitextsuche erweitern und Export als Txt-Datei,  Teilen als Email bzw Plaintext
         
 3.  Was behindert mich bei meiner Arbeit?
 
