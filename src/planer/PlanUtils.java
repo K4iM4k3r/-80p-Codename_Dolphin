@@ -18,21 +18,21 @@ import java.util.regex.Pattern;
  * Created by Kai on 21.08.2017.
  * part of 80p - Codename Dolphin
  */
-public class PlanUtils {
+class PlanUtils {
 
-    public static boolean readFromFile(Path path) {
+    static boolean readFromFile(Path path) {
         try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             String line = reader.readLine();
-            String content = "";
+            StringBuilder content = new StringBuilder();
             int distance = 0;
 
             while (line != null){
                 distance += calculateDistance(line);
-                content += line + "\n";
+                content.append(line).append("\n");
                 line = reader.readLine();
             }
             DatabaseHandler db = new DatabaseHandler();
-            return db.addPlan(distance, content) > 0;
+            return db.addPlan(distance, content.toString()) > 0;
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -40,7 +40,7 @@ public class PlanUtils {
         }
     }
 
-    public static int calculateDistance(String in){
+    static int calculateDistance(String in){
         int result = 0;
         Pattern p = Pattern.compile("(((\\d+)(\\s*[x*]){0,1}\\s*(\\d*))m)(.)*");
         Matcher m = p.matcher(in);
@@ -52,7 +52,7 @@ public class PlanUtils {
         return result;
     }
 
-    public static void exportAsTxt(File path, String output){
+    static void exportAsTxt(File path, String output){
         try (BufferedWriter writer = Files.newBufferedWriter(path.toPath(), StandardCharsets.UTF_8)) {
 
             writer.write(output);
@@ -63,7 +63,7 @@ public class PlanUtils {
         }
     }
 
-    public static void exportAsPdf(File path, List<Uebung> plan, String distance){
+    static void exportAsPdf(File path, List<Uebung> plan, String distance){
         Document document = new Document();
 
         try {
