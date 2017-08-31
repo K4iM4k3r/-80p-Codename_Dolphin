@@ -5,6 +5,7 @@ package datamodel;
  * part of 80p - Codename Dolphin
  */
 public enum Distance {
+    EMPTY("", ""),
     LOW(" distanz <  2000", "Distanz kleiner 2km"),
     SHORT(" distanz >= 2000 AND distanz < 3000", "Distanz zwischen 2 und 3km"),
     MEDIUM(" distanz >= 3000 AND distanz < 4000", "Distanz zwischen 3 und 4km"),

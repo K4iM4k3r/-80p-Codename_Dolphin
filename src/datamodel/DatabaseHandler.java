@@ -346,7 +346,8 @@ public class DatabaseHandler {
         PreparedStatement statement = null;
         try {
             String prequery = "SELECT id_plan, name, inhalt, distanz, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE ";
-            String postquery = " GROUP BY id_plan HAVING hits=? AND " + distance;
+            String postquery = " GROUP BY id_plan HAVING hits=? ";
+            if(!distance.isEmpty()) postquery += "AND " + distance;
             for(int i = 0;  i < userInput.size(); i++){
                 if(i > 0){
                     prequery += " OR ";
@@ -362,10 +363,12 @@ public class DatabaseHandler {
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            if(statement != null) try {
-                statement.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
+            if(statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
         return Optional.empty();

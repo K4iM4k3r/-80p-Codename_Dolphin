@@ -12,6 +12,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -25,6 +26,7 @@ import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import java.io.File;
 import java.util.Optional;
@@ -48,12 +50,14 @@ public class Main extends Application {
     private TagList tagList;
     private Label tagged;
     private Label errorLog;
+    private Label infoSelectedItems;
     private ComboBox<String> tags;
     private TextField inputKeywords;
     private ToggleGroup toggleDistance;
     private ListView<String> searchview;
     private ListView<String> allActTag;
     private ListView<String> selectionTags;
+    private ToggleGroup toggleOptions;
 
 
     @Override
@@ -308,20 +312,20 @@ public class Main extends Application {
         /*
          *  MainPane
          */
-        Button open = new Button("open Plan");
-        Button btn = new Button("Click me!");
-        Button btnExport = new Button("export");
-        createPlan = new Button("new Plan");
+//        Button open = new Button("open Plan");
+//        Button btn = new Button("Click me!");
+//        Button btnExport = new Button("export");
+//        createPlan = new Button("new Plan");
 
 
         //ActionHandler für die Buttons
-        createPlan.setOnAction(this::switchScene);
-        open.setOnAction(i -> openPlan(2));
-        btn.setOnAction(this::loadPlan);
-        btnExport.setOnAction(i -> {
-
-
-        });
+//        createPlan.setOnAction(this::switchScene);
+//        open.setOnAction(i -> openPlan(2));
+//        btn.setOnAction(this::loadPlan);
+//        btnExport.setOnAction(i -> {
+//
+//
+//        });
 
 
 
@@ -331,9 +335,10 @@ public class Main extends Application {
         BorderPane search = new BorderPane();
         selectionTags = new ListView<>(tagList.getData());
         Button btnSearch = new Button("search");
-        Label infoSelectedItems = new Label();
+        infoSelectedItems = new Label();
         inputKeywords = new TextField();
         toggleDistance = new ToggleGroup();
+        RadioButton notImportant = new RadioButton("egal");
         RadioButton lessThanTwo = new RadioButton("< 2km");;
         RadioButton betweenTwoAndThree = new RadioButton(">=2 km  und <3 km");
         RadioButton betweenThreeAndFour = new RadioButton(">= 3km und < 4km");
@@ -343,17 +348,21 @@ public class Main extends Application {
         betweenTwoAndThree.setToggleGroup(toggleDistance);
         betweenThreeAndFour.setToggleGroup(toggleDistance);
         greaterThanFour.setToggleGroup(toggleDistance);
+        notImportant.setToggleGroup(toggleDistance);
 
-        betweenTwoAndThree.setSelected(true);
-        betweenTwoAndThree.requestFocus();
+        notImportant.setSelected(true);
 
+        notImportant.setUserData(Distance.EMPTY);
         lessThanTwo.setUserData(Distance.LOW);
         betweenTwoAndThree.setUserData(Distance.SHORT);
         betweenThreeAndFour.setUserData(Distance.MEDIUM);
         greaterThanFour.setUserData(Distance.LONG);
+        toggleDistance.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            generateSearchLabel();
+        });
         inputKeywords.setPromptText("Freitextsuche");
 
-        toggleDistanceItems.getChildren().addAll(lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
+        toggleDistanceItems.getChildren().addAll(notImportant, lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
 
         selectionTags.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         selectionTags.setMaxHeight(250.0);
@@ -373,11 +382,7 @@ public class Main extends Application {
                     } else {
                         selectionModel.select(idx);
                     }
-                    StringBuilder s = new StringBuilder();
-                    for(String item : selectionModel.getSelectedItems()){
-                        s.append(item).append(", ");
-                    }
-                    infoSelectedItems.setText(s.length()> 1 ? s.substring(0, s.length()-2) : s.toString());
+                    generateSearchLabel();
                     event.consume();
                 }
             });
@@ -386,15 +391,26 @@ public class Main extends Application {
 
         btnSearch.setOnAction(this::search);
 
-        //search.setTop();
+        Insets spacing = new Insets(10.0,10.0,0.0,10.0);
+        BorderPane.setMargin(inputKeywords, spacing);
+        BorderPane.setMargin(selectionTags, spacing);
+        BorderPane.setMargin(toggleDistanceItems, spacing);
+        BorderPane.setMargin(btnSearch, spacing);
+        BorderPane.setAlignment(btnSearch, Pos.CENTER_LEFT);
+
+        search.setTop(inputKeywords);
         search.setLeft(selectionTags);
         search.setCenter(toggleDistanceItems);
         search.setRight(btnSearch);
         search.setBottom(infoSelectedItems);
 
 
+        /*
+         * ToggleGroup AllBookmarks or AllPlan
+         */
 
-        ToggleGroup toggleOptions = new ToggleGroup();
+
+        toggleOptions = new ToggleGroup();
         ToggleButton showAllPlans = new ToggleButton("all Plans");
         ToggleButton showBookmarks = new ToggleButton("Bookmarks");
 
@@ -501,9 +517,9 @@ public class Main extends Application {
 
         toggleItems.setSpacing(15.0);
 
-        shortCut.getChildren().addAll(btn, createPlan, open, btnExport);
+//        shortCut.getChildren().addAll(btn, createPlan, open, btnExport);
         toggleItems.getChildren().addAll(showAllPlans, showBookmarks);
-        verticalBox.getChildren().addAll(shortCut, search, horsep, searchview);
+        verticalBox.getChildren().addAll(search, horsep, searchview);
         footerMainPane.getChildren().addAll(toggleItems, errorLog);
         pane.setTop(menuBar);
         pane.setCenter(verticalBox);
@@ -511,6 +527,9 @@ public class Main extends Application {
 
         main = new Scene(pane);
 
+        stage.setOnCloseRequest(event -> {
+            db.close();
+        });
         stage.setScene(main);
         stage.show();
     }
@@ -720,8 +739,22 @@ public class Main extends Application {
         String clause =  ((Distance) toggleDistance.getSelectedToggle().getUserData()).getClause();
         if(!items.isEmpty()){
             db.searchPlanByUser(items, clause).ifPresent(searchview::setItems);
+            Toggle toggle = toggleOptions.getSelectedToggle();
+            if(toggle != null) toggle.setSelected(false);
             errorLog.setText("Treffer: " + searchview.getItems().size());
         }
+    }
+    private void generateSearchLabel(){
+        StringBuilder s = new StringBuilder("Suche nach: ");
+        for(String item : selectionTags.getSelectionModel().getSelectedItems()){
+            s.append(item).append(", ");
+        }
+        if(s.length()> 1)        s.delete(s.length()-2, s.length());
+        String dis = ((Distance) toggleDistance.getSelectedToggle().getUserData()).getInformation();
+        if (!dis.isEmpty()){
+            s.append(" - " + dis);
+        }
+        infoSelectedItems.setText(s.toString());
     }
 
 }
