@@ -5,10 +5,7 @@ import com.itextpdf.text.pdf.PdfWriter;
 import datamodel.DatabaseHandler;
 import datamodel.Plan;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,7 +50,18 @@ public class PlanUtils {
         return result;
     }
 
-    public static void exportPlan(File path, Plan plan){
+    public static void exportAsTxt(File path, String output){
+        try (BufferedWriter writer = Files.newBufferedWriter(path.toPath(), StandardCharsets.UTF_8)) {
+
+            writer.write(output);
+            writer.flush();
+            System.out.println("Plan als txt exportiert: "+ path.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void exportAsPdf(File path, Plan plan){
         Document document = new Document();
 
         try {

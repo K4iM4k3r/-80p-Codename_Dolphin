@@ -20,6 +20,8 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
@@ -36,29 +38,34 @@ import java.util.regex.Pattern;
 
 public class Main extends Application {
     private String projectname = "Project - Dolphin";
-    private Stage actualStage;
-    private Scene main;
-    private Scene planview;
-    private Scene tagEditor;
-    private Button exit;
-    private Button createPlan;
-    private Label labelDistance;
-    private VBox list;
     private int actID = -1;
     private int stateListView = 0;
     private DatabaseHandler db = new DatabaseHandler();
     private ObservableList<String> data = FXCollections.observableArrayList();
     private TagList tagList;
+
+    private Stage actualStage;
+    private Scene main;
+    private Scene planview;
+    private Scene tagEditor;
+
+    private Button createPlan;
+
+    private Label labelDistance;
     private Label tagged;
     private Label errorLog;
     private Label infoSelectedItems;
+
+    private VBox list;
     private ComboBox<String> tags;
     private TextField inputKeywords;
     private ToggleGroup toggleDistance;
+    private ToggleGroup toggleOptions;
     private ListView<String> searchview;
     private ListView<String> allActTag;
     private ListView<String> selectionTags;
-    private ToggleGroup toggleOptions;
+    private MenuItem menuItemExportPdf;
+    private MenuItem menuItemExportTxt;
 
 
     @Override
@@ -97,14 +104,18 @@ public class Main extends Application {
         Menu menuFilePlan = new Menu("File");
 
         MenuItem menuItemSave = new MenuItem("Save");
-        MenuItem menuItemExport = new MenuItem("Export PDF");
+        menuItemExportPdf = new MenuItem("Export as PDF");
+        menuItemExportTxt = new MenuItem("Export as TXT");
+        MenuItem menuItemText = new MenuItem("Copy as Text");
         MenuItem menuItemSend = new MenuItem("Send EMail");
 
         menuItemSave.setOnAction(this::savePlan);
-        menuItemExport.setOnAction(this::exportPlan);
+        menuItemExportPdf.setOnAction(this::exportPlan);
+        menuItemExportTxt.setOnAction(this::exportPlan);
+        menuItemText.setOnAction(this::copyAsText);
         menuItemSend.setOnAction(this::sendPlan);
 
-        menuFilePlan.getItems().addAll(menuItemSave, menuItemExport, menuItemSend);
+        menuFilePlan.getItems().addAll(menuItemSave, menuItemExportPdf, menuItemExportTxt, menuItemText, menuItemSend);
         menuBarPlan.getMenus().add(menuFilePlan);
 
 
@@ -165,7 +176,7 @@ public class Main extends Application {
         accordion.setExpandedPane(tagPane);
 
         Button savePlan = new Button("save");
-        exit = new Button("exit");
+        Button exit = new Button("exit");
         exit.setOnAction(this::switchScene);
 
         savePlan.setOnAction(this::savePlan);
@@ -344,7 +355,7 @@ public class Main extends Application {
         toggleDistance = new ToggleGroup();
         Label labelToggleDistance = new Label("Distanz:");
         RadioButton notImportant = new RadioButton("egal");
-        RadioButton lessThanTwo = new RadioButton("bis 2km");;
+        RadioButton lessThanTwo = new RadioButton("bis 2km");
         RadioButton betweenTwoAndThree = new RadioButton("ab 2km bis 3 km");
         RadioButton betweenThreeAndFour = new RadioButton("ab 3km bis 4km");
         RadioButton greaterThanFour = new RadioButton("ab 4km");
@@ -362,9 +373,7 @@ public class Main extends Application {
         betweenTwoAndThree.setUserData(Distance.SHORT);
         betweenThreeAndFour.setUserData(Distance.MEDIUM);
         greaterThanFour.setUserData(Distance.LONG);
-        toggleDistance.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            generateSearchLabel();
-        });
+        toggleDistance.selectedToggleProperty().addListener((observable, oldValue, newValue) -> generateSearchLabel());
 
         inputKeywords.setPromptText("Freitextsuche");
         inputKeywords.setOnKeyPressed(event -> {
@@ -548,9 +557,7 @@ public class Main extends Application {
 
         main = new Scene(pane);
 
-        stage.setOnCloseRequest(event -> {
-            db.close();
-        });
+        stage.setOnCloseRequest(event -> db.close());
         stage.setScene(main);
         stage.show();
     }
@@ -680,12 +687,23 @@ public class Main extends Application {
     }
 
     private void exportPlan(ActionEvent e){
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Plan");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        FileChooser.ExtensionFilter filter =
+                e.getSource().equals(menuItemExportPdf) ?
+                        new FileChooser.ExtensionFilter("PDF", "*.pdf") :
+                        new FileChooser.ExtensionFilter("TXT", "*.txt");
+
+        fileChooser.getExtensionFilters().add(filter);
         File selectedFile = fileChooser.showSaveDialog(actualStage);
         if(selectedFile != null){
-            db.selectPlan(actID).ifPresent( p -> PlanUtils.exportPlan(selectedFile, p));
+            if(e.getSource().equals(menuItemExportPdf)){
+                db.selectPlan(actID).ifPresent( p -> PlanUtils.exportAsPdf(selectedFile, p));
+            }
+            else if(e.getSource().equals(menuItemExportTxt)){
+                PlanUtils.exportAsTxt(selectedFile, generatePlanString());
+            }
         }
     }
 
@@ -760,9 +778,9 @@ public class Main extends Application {
         String clause =  ((Distance) toggleDistance.getSelectedToggle().getUserData()).getClause();
         if(!items.isEmpty() || !clause.isEmpty() ){
             System.out.println("Suche ...");
-            db.searchPlanByUser(items, clause).ifPresent(searchview::setItems);
             Toggle toggle = toggleOptions.getSelectedToggle();
             if(toggle != null) toggle.setSelected(false);
+            db.searchPlanByUser(items, clause).ifPresent(searchview::setItems);
             errorLog.setText("Treffer: " + searchview.getItems().size());
         }
         else if(!inputKeywords.getText().isEmpty()){
@@ -786,7 +804,7 @@ public class Main extends Application {
         if(s.length()> 1)        s.delete(s.length()-2, s.length());
         String dis = ((Distance) toggleDistance.getSelectedToggle().getUserData()).getInformation();
         if (!dis.isEmpty()){
-            s.append(" - " + dis);
+            s.append(" - ").append(dis);
         }
         infoSelectedItems.setText(s.toString());
     }
@@ -795,10 +813,10 @@ public class Main extends Application {
         getHostServices().showDocument("mailto:%20?subject=My%20Plan&body=" + generatePlanString(true));
     }
 
-
     private String generatePlanString(){
         return generatePlanString(false);
     }
+
     private String generatePlanString(boolean mail){
         String spacing = mail ? "%20" : " ";
         String linebreak = mail ? "%0d%0a" : "\n";
@@ -817,6 +835,14 @@ public class Main extends Application {
             result.append(stringDistance).append(spacing).append(stringPractice).append(linebreak);
         }
         return result.toString();
+    }
+
+    private void copyAsText(ActionEvent e){
+        String plan = generatePlanString();
+        Clipboard clipboard = Clipboard.getSystemClipboard();
+        ClipboardContent clipboardContent = new ClipboardContent();
+        clipboardContent.putString(plan);
+        clipboard.setContent(clipboardContent);
     }
 
 }
