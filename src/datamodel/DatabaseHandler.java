@@ -345,18 +345,31 @@ public class DatabaseHandler {
     public Optional<ObservableList<String>> searchPlanByUser(ObservableList<String> userInput, String distance){
         PreparedStatement statement = null;
         try {
-            String prequery = "SELECT id_plan, name, inhalt, distanz, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE ";
-            String postquery = " GROUP BY id_plan HAVING hits=? ";
-            if(!distance.isEmpty()) postquery += "AND " + distance;
-            for(int i = 0;  i < userInput.size(); i++){
-                if(i > 0){
-                    prequery += " OR ";
+            ResultSet rs;
+            if(!userInput.isEmpty()){
+                String prequery = "SELECT id_plan, name, inhalt, distanz, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE ";
+                String postquery = " GROUP BY id_plan HAVING hits=? ";
+                if(!distance.isEmpty()) postquery += "AND " + distance;
+                for(int i = 0;  i < userInput.size(); i++){
+                    if(i > 0){
+                        prequery += " OR ";
+                    }
+                    prequery += "name=\"" + userInput.get(i) + "\"";
                 }
-                prequery += "name=\"" + userInput.get(i) + "\"";
+                statement = connection.prepareStatement(prequery + postquery);
+                statement.setInt(1, userInput.size());
+
+                System.out.println("Suche nach Tags: " + prequery+postquery);
+                rs = statement.executeQuery();
             }
-            statement = connection.prepareStatement(prequery + postquery);
-            statement.setInt(1, userInput.size());
-            ResultSet rs = statement.executeQuery();
+            else {
+                String query = "SELECT * FROM plan WHERE " + distance;
+                statement = connection.prepareStatement(query);
+
+                rs = statement.executeQuery();
+                System.out.println("Suche nach distanz: " + query);
+            }
+
 
             return Optional.of(makeListFromResult(rs));
 

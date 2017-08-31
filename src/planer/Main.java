@@ -333,11 +333,12 @@ public class Main extends Application {
          *  SearchPane
          */
         BorderPane search = new BorderPane();
-        selectionTags = new ListView<>(tagList.getData());
         Button btnSearch = new Button("search");
+        selectionTags = new ListView<>(tagList.getData());
         infoSelectedItems = new Label();
         inputKeywords = new TextField();
         toggleDistance = new ToggleGroup();
+        Label labelToggleDistance = new Label("Distanz:");
         RadioButton notImportant = new RadioButton("egal");
         RadioButton lessThanTwo = new RadioButton("< 2km");;
         RadioButton betweenTwoAndThree = new RadioButton(">=2 km  und <3 km");
@@ -362,11 +363,11 @@ public class Main extends Application {
         });
         inputKeywords.setPromptText("Freitextsuche");
 
-        toggleDistanceItems.getChildren().addAll(notImportant, lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
+        toggleDistanceItems.getChildren().addAll(labelToggleDistance, notImportant, lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
 
         selectionTags.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         selectionTags.setMaxHeight(250.0);
-        selectionTags.setMaxWidth(100.0);
+        selectionTags.setMaxWidth(120.0);
         selectionTags.setMinHeight(100.0);
         selectionTags.setCellFactory((ListView<String> lv) -> {
             ListCell<String> listCell = new ListCell<>();
@@ -416,6 +417,7 @@ public class Main extends Application {
 
         showAllPlans.setToggleGroup(toggleOptions);
         showBookmarks.setToggleGroup(toggleOptions);
+        showAllPlans.requestFocus();
 
         toggleOptions.selectedToggleProperty().addListener((observable, oldToggle, newToggle) -> {
             if(newToggle == null){
@@ -737,7 +739,8 @@ public class Main extends Application {
     private void search(ActionEvent e){
         ObservableList<String> items = selectionTags.getSelectionModel().getSelectedItems();
         String clause =  ((Distance) toggleDistance.getSelectedToggle().getUserData()).getClause();
-        if(!items.isEmpty()){
+        if(!items.isEmpty() || !clause.isEmpty() ){
+            System.out.println("Suche ...");
             db.searchPlanByUser(items, clause).ifPresent(searchview::setItems);
             Toggle toggle = toggleOptions.getSelectedToggle();
             if(toggle != null) toggle.setSelected(false);
