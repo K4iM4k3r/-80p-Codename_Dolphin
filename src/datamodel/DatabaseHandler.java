@@ -387,6 +387,19 @@ public class DatabaseHandler {
         return Optional.empty();
     }
 
+    public Optional<ObservableList<String>> searchByUserKeyword(String input){
+        String query = "SELECT * FROM plan WHERE inhalt LIKE \"%" + input + "%\";";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            ResultSet rs = statement.executeQuery();
+
+            return Optional.of(makeListFromResult(rs));
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
     private ObservableList<String> makeListFromResult(ResultSet rs) throws SQLException {
         ObservableList<String> lst = FXCollections.observableArrayList();
         while(rs.next()){
