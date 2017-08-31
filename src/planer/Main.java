@@ -1,9 +1,6 @@
 package planer;
 
-import datamodel.DatabaseHandler;
-import datamodel.Distance;
-import datamodel.Plan;
-import datamodel.TagList;
+import datamodel.*;
 
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
@@ -32,6 +29,8 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -177,6 +176,8 @@ public class Main extends Application {
 
         Button savePlan = new Button("save");
         Button exit = new Button("exit");
+        Button previous = new Button("<");
+        Button next = new Button(">");
         exit.setOnAction(this::switchScene);
 
         savePlan.setOnAction(this::savePlan);
@@ -699,7 +700,20 @@ public class Main extends Application {
         File selectedFile = fileChooser.showSaveDialog(actualStage);
         if(selectedFile != null){
             if(e.getSource().equals(menuItemExportPdf)){
-                db.selectPlan(actID).ifPresent( p -> PlanUtils.exportAsPdf(selectedFile, p));
+                List<Uebung> rows = new ArrayList<>();
+                String dis = labelDistance.getText();
+                dis = dis.substring(dis.indexOf(":")+1);
+
+                for(Node node :  list.getChildren()){
+                    HBox row = (HBox) node;
+                    TextField distance = (TextField) row.getChildren().get(0);
+                    TextField practice = (TextField) row.getChildren().get(1);
+                    Uebung unit = new Uebung(distance.getText(), practice.getText());
+
+                    rows.add(unit);
+                }
+                PlanUtils.exportAsPdf(selectedFile, rows, dis);
+
             }
             else if(e.getSource().equals(menuItemExportTxt)){
                 PlanUtils.exportAsTxt(selectedFile, generatePlanString());

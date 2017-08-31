@@ -2,13 +2,15 @@ package planer;
 
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfWriter;
+
 import datamodel.DatabaseHandler;
-import datamodel.Plan;
+import datamodel.Uebung;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,7 +63,7 @@ public class PlanUtils {
         }
     }
 
-    public static void exportAsPdf(File path, Plan plan){
+    public static void exportAsPdf(File path, List<Uebung> plan, String distance){
         Document document = new Document();
 
         try {
@@ -71,42 +73,39 @@ public class PlanUtils {
 
             Paragraph p = new Paragraph();
             p.setFont(new Font(Font.FontFamily.HELVETICA, 14f, Font.BOLD));
-//            p.add(input.getText().toString()+"\n");
+            p.add("Trainingsplan \n");
             document.add(p);
 
+            TabSettings rowsSettings = new TabSettings(65f);
+            Font rowsFont = new Font(Font.FontFamily.HELVETICA, 14f, Font.NORMAL);
 
-            //Add paragraph to the document
-            String[] content = plan.getContent().split("\n");
-
-            for(int i = 0; i < content.length; i+=2){
+            for(Uebung ueb : plan){
                 p = new Paragraph();
-                p.setTabSettings(new TabSettings(65f));
-                p.setFont(new Font(Font.FontFamily.HELVETICA, 14f, Font.NORMAL));
-                p.add(new Chunk(content[i]));
-//                p.add(Chunk.TABBING);
-//                p.add(new Chunk(content.get(i+1)));
-//                if(i != content.size()-1){
-//                    p.add("\n\n");
-//                }
+                p.setTabSettings(rowsSettings);
+                p.setFont(rowsFont);
+
+                p.add(new Chunk(ueb.getDistance()));
+                p.add(Chunk.TABBING);
+                p.add(new Chunk(ueb.getPractice()));
+
+                if(plan.lastIndexOf(ueb) != plan.size()-1)    p.add("\n\n");
+
                 document.add(p);
-
-
             }
+
             p = new Paragraph();
-            p.setTabSettings(new TabSettings(65f));
-            p.setFont(new Font(Font.FontFamily.HELVETICA, 14f, Font.NORMAL));
+            p.setTabSettings(rowsSettings);
+            p.setFont(rowsFont);
             p.add("__________\n");
-            p.add(Integer.toString(plan.getDistance()) + "m");
+            p.add(distance);
             document.add(p);
 
             p = new Paragraph();
-//            p.add("\n\n\n\nSwimplan "+getActivity().getResources().getString(R.string.app_version) +" Plan ("+ id +")\n© Kai Schäfer");
             document.add(p);
-        } catch (Exception e) {
+        } catch (FileNotFoundException | DocumentException e) {
             e.printStackTrace();
         }
 
-        //Close document
         document.close();
     }
 }

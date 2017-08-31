@@ -1,33 +1,31 @@
 package datamodel;
 
-import javafx.beans.property.SimpleStringProperty;
-
 /**
  * Created by Kai on 17.08.2017.
  * part of 80p - Codename Dolphin
  */
 public class Uebung {
-    private SimpleStringProperty distanz;
-    private SimpleStringProperty uebung;
+    private String distance;
+    private String practice;
 
-    public Uebung(String distanz, String uebung){
-        this.distanz = new SimpleStringProperty(distanz);
-        this.uebung  = new SimpleStringProperty(uebung);
+    public Uebung(String distance, String practice){
+        this.distance = distance;
+        this.practice  = practice;
     }
 
-    public String getDistanz() {
-        return distanz.get();
+    public String getDistance() {
+        return distance;
     }
 
-    public String getUebung() {
-        return uebung.get();
+    public String getPractice() {
+        return practice;
     }
 
-    public void setDistanz(String distanz) {
-        this.distanz.set(distanz);
+    public void setDistance(String distance) {
+        this.distance = distance;
     }
 
-    public void setUebung(String uebung) {
-        this.uebung.set(uebung);
+    public void setPractice(String practice) {
+        this.practice = practice;
     }
 }
