@@ -17,6 +17,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
@@ -738,7 +739,7 @@ public class Main extends Application {
         cell1.setText(distance);
         cell2.setText(unit);
         btnAdd.setText("new Line");
-//        btnAdd.setGraphic(new ImageView(new Image("file:icons\\addLine.png")));
+        btnAdd.setGraphic(new ImageView(new Image("file:icons\\add.png")));
         btnRemove.setText("remove");
 //        btnRemove.setGraphic(new ImageView(new Image("file:icons\\deleteLine.png").));
 
