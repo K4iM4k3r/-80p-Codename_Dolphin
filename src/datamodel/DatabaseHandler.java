@@ -43,12 +43,14 @@ public class DatabaseHandler {
     }
 
     public int addPlan(int dis, String content){
-        String query = "INSERT INTO Plan (Distanz, Inhalt)  VALUES (?, ?);";
-        try{
-            PreparedStatement stmt = connection.prepareStatement(query);
+        String query = "INSERT INTO Plan (Distanz, Inhalt, added)  VALUES (?, ?, ?);";
+
+        try (PreparedStatement stmt = connection.prepareStatement(query)){
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
             stmt.setInt(1, dis);
             stmt.setString(2, content);
+            stmt.setString(3, df.format(Calendar.getInstance(Locale.GERMANY).getTime()));
             int res = stmt.executeUpdate();
 
             if(res == 0 ){
@@ -56,7 +58,9 @@ public class DatabaseHandler {
             }
             ResultSet generateID = stmt.getGeneratedKeys();
             if (generateID.next()){
-                return generateID.getInt(1);
+                int result = generateID.getInt(1);
+                generateID.close();
+                return result;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -66,8 +70,8 @@ public class DatabaseHandler {
 
     public void updatePlan(int id, int distance , String content){
         String query = "UPDATE plan SET distanz= ?, inhalt= ? WHERE id = ?; ";
-        try{
-            PreparedStatement statement = connection.prepareStatement(query);
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, distance);
             statement.setString(2, content);
             statement.setInt(3, id);
@@ -81,14 +85,16 @@ public class DatabaseHandler {
 
 
     public Optional<Plan> selectPlan(int id){
-        try {
-            String query = "SELECT * FROM  plan WHERE id = ? ;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "SELECT * FROM  plan WHERE id = ? ;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
             ResultSet rs = statement.executeQuery();
 
             if(rs.next()){
-                return Optional.of(new Plan(rs.getInt(1), rs.getInt(3),rs.getString(2)));
+                Optional<Plan> result = Optional.of(new Plan(rs.getInt(1), rs.getInt(3),rs.getString(2)));
+                rs.close();
+                return result;
             }
 
         } catch (SQLException e) {
@@ -98,9 +104,9 @@ public class DatabaseHandler {
     }
 
     public void deletePlan(int id){
-        try {
-            String query = "DELETE FROM plan WHERE id= ?";
-            PreparedStatement statement = connection.prepareStatement(query);
+       String query = "DELETE FROM plan WHERE id= ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
 
             statement.executeUpdate();
@@ -113,9 +119,9 @@ public class DatabaseHandler {
     }
 
     private void deleteAllTagOnPlan(int id){
-        try {
-            String query = "DELETE FROM plan_tag WHERE id_plan=?;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "DELETE FROM plan_tag WHERE id_plan=?;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
 
             statement.executeUpdate();
@@ -125,9 +131,9 @@ public class DatabaseHandler {
     }
 
     private void deleteAllBookmarksOnPlan(int id){
-        try {
-            String query = "DELETE FROM bookmark WHERE id_plan=?;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "DELETE FROM bookmark WHERE id_plan=?;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
 
             statement.executeUpdate();
@@ -137,10 +143,10 @@ public class DatabaseHandler {
     }
 
     public ObservableList<String> selectAllPlan(){
-        try {
-            String query = "SELECT * FROM  Plan";
-            Statement stmt = connection.createStatement();
-            ResultSet rs =  stmt.executeQuery(query);
+        String query = "SELECT * FROM  Plan";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
+            ResultSet rs =  statement.executeQuery();
 
             return makeListFromResult(rs);
 
@@ -151,9 +157,9 @@ public class DatabaseHandler {
     }
 
     public void addUserTag(String name){
-        try {
-            String query = "INSERT INTO tag (name) VALUES (?)";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "INSERT INTO tag (name) VALUES (?)";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setString(1, name);
             statement.executeUpdate();
 
@@ -163,9 +169,9 @@ public class DatabaseHandler {
     }
 
     public void updateUserTag(int id, String value){
-        try {
-            String query = "UPDATE tag SET name=? WHERE id=?";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "UPDATE tag SET name=? WHERE id=?";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setString(1, value);
             statement.setInt(2, id);
 
@@ -176,9 +182,9 @@ public class DatabaseHandler {
     }
 
     public void deleteTag(int id){
-        try{
-            String query = "DELETE FROM tag WHERE id=?";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "DELETE FROM tag WHERE id=?";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
 
             statement.executeUpdate();
@@ -189,9 +195,9 @@ public class DatabaseHandler {
     }
 
     int setTagOnPlan(int plan, int tag){
-        try {
-            String query = "INSERT INTO plan_tag (id_plan, id_tag) VALUES (?, ?)";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "INSERT INTO plan_tag (id_plan, id_tag) VALUES (?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, plan);
             statement.setInt(2, tag);
 
@@ -208,9 +214,9 @@ public class DatabaseHandler {
     }
 
     void removeTagOnPlan(int plan, int tag){
-        try{
-            String query = "DELETE FROM plan_tag WHERE id_plan=? AND id_tag=?;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "DELETE FROM plan_tag WHERE id_plan=? AND id_tag=?;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, plan);
             statement.setInt(2, tag);
 
@@ -222,14 +228,15 @@ public class DatabaseHandler {
 
     Map<String, Integer> selectAllTag(){
         Map<String, Integer> result = new LinkedHashMap<>();
-        try {
-            String query = "SELECT * FROM tag";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "SELECT * FROM tag";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             ResultSet resultSet = statement.executeQuery();
 
             while(resultSet.next()){
                 result.put(resultSet.getString("name" ), resultSet.getInt(1));
             }
+            resultSet.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -237,9 +244,9 @@ public class DatabaseHandler {
     }
 
     public TagList getAllTagsOnPlan(int id){
-        try{
-            String querry = "SELECT id_tag, id_plan, name FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id WHERE id_plan=?";
-            PreparedStatement statement = connection.prepareStatement(querry);
+        String query = "SELECT id_tag, id_plan, name FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id WHERE id_plan=?";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
             ResultSet rs = statement.executeQuery();
             List<String> result = new ArrayList<>();
@@ -247,6 +254,7 @@ public class DatabaseHandler {
                 result.add( rs.getString("name" ) );
             }
 
+            rs.close();
             return new TagList(selectAllTag(), result, id);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -255,12 +263,14 @@ public class DatabaseHandler {
     }
 
     public int getNumberOfPlan(){
-        try {
-            String query = "SELECT count(id) FROM plan";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "SELECT count(id) FROM plan";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             ResultSet rs = statement.executeQuery();
             if(rs.next()){
-                return rs.getInt(1);
+                int res = rs.getInt(1);
+                rs.close();
+                return res;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -269,15 +279,16 @@ public class DatabaseHandler {
     }
 
     public Optional<Plan> getRandomPlan(){
-        try{
-            String query = "SELECT id FROM plan;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "SELECT id FROM plan;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             ResultSet rs = statement.executeQuery();
             List<Integer> ids = new ArrayList<>();
             while(rs.next()){
              ids.add(rs.getInt(1));
             }
             Random random = new Random();
+            rs.close();
             return selectPlan(ids.get(random.nextInt(ids.size())));
 
         } catch (SQLException e) {
@@ -287,10 +298,11 @@ public class DatabaseHandler {
     }
 
     public void addBookmark(int id, String comment){
-        try {
-            String query = "INSERT INTO bookmark (id_plan, comment, added) VALUES (?, ?, ?);";
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "INSERT INTO bookmark (id_plan, comment, added) VALUES (?, ?, ?);";
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setInt(1, id);
             statement.setString(2, comment);
             statement.setString(3, df.format(Calendar.getInstance().getTime()));
@@ -302,9 +314,9 @@ public class DatabaseHandler {
     }
 
     public void removeBookmark(String comment){
-        try {
-            String query = "DELETE FROM bookmark WHERE comment=?;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "DELETE FROM bookmark WHERE comment=?;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             statement.setString(1, comment);
 
             statement.executeUpdate();
@@ -316,13 +328,14 @@ public class DatabaseHandler {
 
     public ObservableList<String> selectAllBookmarks(){
         ObservableList<String> list = FXCollections.observableArrayList();
-        try{
-            String query = "SELECT * FROM bookmark;";
-            PreparedStatement statement = connection.prepareStatement(query);
+        String query = "SELECT * FROM bookmark;";
+        try (PreparedStatement statement = connection.prepareStatement(query)){
+
             ResultSet result = statement.executeQuery();
             while(result.next()){
                 list.add("Plan " + result.getString(2)+ " - " + result.getString(3));
             }
+            result.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -330,6 +343,7 @@ public class DatabaseHandler {
     }
 
     public Optional<ObservableList<String>> searchPlanByUser(ObservableList<String> userInput, String distance){
+        PreparedStatement statement = null;
         try {
             String prequery = "SELECT id_plan, name, inhalt, distanz, count(id_plan) AS hits FROM plan_tag INNER JOIN tag ON plan_tag.id_tag=tag.id INNER JOIN plan ON id_plan=plan.id WHERE ";
             String postquery = " GROUP BY id_plan HAVING hits=? AND " + distance;
@@ -339,7 +353,7 @@ public class DatabaseHandler {
                 }
                 prequery += "name=\"" + userInput.get(i) + "\"";
             }
-            PreparedStatement statement = connection.prepareStatement(prequery + postquery);
+            statement = connection.prepareStatement(prequery + postquery);
             statement.setInt(1, userInput.size());
             ResultSet rs = statement.executeQuery();
 
@@ -347,6 +361,12 @@ public class DatabaseHandler {
 
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            if(statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
         return Optional.empty();
     }
@@ -360,6 +380,7 @@ public class DatabaseHandler {
 
             lst.add(rs.getString(1) + " - " + summary);
         }
+        rs.close();
         return lst;
     }
 
