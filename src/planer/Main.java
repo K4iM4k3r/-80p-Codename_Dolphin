@@ -385,12 +385,7 @@ public class Main extends Application {
         });
         inputKeywords.setOnKeyReleased(event -> {
             String input = inputKeywords.getText();
-            if(!input.isEmpty()){
-                infoSelectedItems.setText("Suche nach " + input);
-            }
-            else {
-                infoSelectedItems.setText("");
-            }
+            generateSearchLabel();
         });
 
         toggleDistanceItems.getChildren().addAll(labelToggleDistance, notImportant, lessThanTwo, betweenTwoAndThree, betweenThreeAndFour, greaterThanFour);
@@ -409,7 +404,10 @@ public class Main extends Application {
                     int idx;
                     idx = listCell.getIndex();
                     if (selectionModel.getSelectedIndices().contains(idx)) {
+                        ObservableList<String> tmp = selectionModel.getSelectedItems();
+                        System.out.println("Deselect index: " + idx);
                         selectionModel.clearSelection(idx);
+                        ObservableList<String> tmp_after = selectionModel.getSelectedItems();
                     } else {
                         selectionModel.select(idx);
                     }
@@ -517,8 +515,6 @@ public class Main extends Application {
                     }
                 }
             });
-
-
 
             menu.getItems().setAll(openItem, deleteItem);
             cell.textProperty().bind(cell.itemProperty());
@@ -738,7 +734,7 @@ public class Main extends Application {
         cell2.setMinWidth(300);
         cell1.setText(distance);
         cell2.setText(unit);
-        btnAdd.setText("new Line");
+//        btnAdd.setText("new Line");
         btnAdd.setGraphic(new ImageView(new Image("file:icons\\add.png")));
         btnRemove.setText("remove");
 //        btnRemove.setGraphic(new ImageView(new Image("file:icons\\deleteLine.png").));
@@ -791,11 +787,13 @@ public class Main extends Application {
     private void search(ActionEvent e){
         ObservableList<String> items = selectionTags.getSelectionModel().getSelectedItems();
         String clause =  ((Distance) toggleDistance.getSelectedToggle().getUserData()).getClause();
-        if(!items.isEmpty() || !clause.isEmpty() ){
+        String keywords = inputKeywords.getText();
+
+        if(!items.isEmpty() || !clause.isEmpty() || !keywords.isEmpty()){
             System.out.println("Suche ...");
             Toggle toggle = toggleOptions.getSelectedToggle();
             if(toggle != null) toggle.setSelected(false);
-            db.searchPlanByUser(items, clause).ifPresent(searchview::setItems);
+            db.searchPlanByUser(items, clause, keywords).ifPresent(searchview::setItems);
             errorLog.setText("Treffer: " + searchview.getItems().size());
         }
         else if(!inputKeywords.getText().isEmpty()){
@@ -818,8 +816,12 @@ public class Main extends Application {
         }
         if(s.length()> 1)        s.delete(s.length()-2, s.length());
         String dis = ((Distance) toggleDistance.getSelectedToggle().getUserData()).getInformation();
-        if (!dis.isEmpty()){
+        if(!dis.isEmpty()){
             s.append(" - ").append(dis);
+        }
+        String keywords = inputKeywords.getText();
+        if(!keywords.isEmpty()){
+            s.append(" - ").append(keywords);
         }
         infoSelectedItems.setText(s.toString());
     }
