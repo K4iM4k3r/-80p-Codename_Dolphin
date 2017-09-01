@@ -342,7 +342,7 @@ public class DatabaseHandler {
         return list;
     }
 
-    public Optional<ObservableList<String>> searchPlanByUser(ObservableList<String> userInput, String distance){
+    public Optional<ObservableList<String>> searchPlanByUser(ObservableList<String> userInput, String distance, String keywords){
         PreparedStatement statement = null;
         try {
             ResultSet rs;
@@ -356,6 +356,10 @@ public class DatabaseHandler {
                     }
                     prequery += "name=\"" + userInput.get(i) + "\"";
                 }
+                if(!keywords.isEmpty()){
+                    prequery += " AND inhalt LIKE \"%" + keywords + "%\"";
+                }
+
                 statement = connection.prepareStatement(prequery + postquery);
                 statement.setInt(1, userInput.size());
 
