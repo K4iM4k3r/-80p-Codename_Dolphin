@@ -1,1 +1,1 @@
-Das ist die Umsetzung des 20% Project für Programmieren interaktiver Systeme (PiS), SoSe 2017)
+Das ist die Umsetzung des 80% Project für Programmieren interaktiver Systeme (PiS), SoSe 2017) an der THM
